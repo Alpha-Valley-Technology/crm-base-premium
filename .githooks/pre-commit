@@ -1,0 +1,46 @@
+#!/bin/sh
+# Trava de segredo antes do commit. Barato, e evita o acidente que não tem
+# desfazer: credencial que entra no histórico do git fica lá para sempre —
+# apagar depois não resolve, porque o commit antigo continua acessível.
+#
+# Ligado por: git config core.hooksPath .githooks
+# Para pular num caso legítimo: git commit --no-verify
+
+# A CONFIGURAÇÃO WEB DO FIREBASE NÃO É SEGREDO, e precisa ficar de fora da
+# varredura. A `apiKey` que mora em `base/firebase.js` é entregue a todo
+# navegador que abre o app — ela só identifica o projeto; quem protege os
+# dados são as regras do Firestore e o login. Sem esta exceção, o hook
+# barrava o arquivo em todo commit, e a saída fácil era `--no-verify` no
+# commit inteiro: a trava deixava de valer justamente para os outros 200
+# arquivos, que é onde o segredo de verdade entraria sem ninguém ver.
+# Alarme que toca sozinho todo dia é alarme que a gente desliga.
+ISENTOS='^base/firebase\.js$'
+
+# O `-e` NÃO É ENFEITE: o primeiro padrão começa com `-----`, e sem ele o
+# grep lê isso como opção de linha de comando, reclama e devolve "nada
+# encontrado". O hook passava a aprovar tudo, calado. Foi assim que ele
+# nasceu quebrado — e só apareceu porque a prova exigia que um segredo
+# plantado de propósito fosse barrado.
+PADROES='-----BEGIN [A-Z ]*PRIVATE KEY|GOCSPX-[A-Za-z0-9_-]{10,}|"private_key"[[:space:]]*:|gh[pousr]_[A-Za-z0-9]{30,}|AIza[0-9A-Za-z_-]{30,}|sk-[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{10,}'
+
+achados=''
+# ARQUIVO POR ARQUIVO, e não o diff inteiro de uma vez: é o que permite
+# isentar um caminho conhecido sem cegar a varredura no resto.
+for arquivo in $(git diff --cached --name-only --diff-filter=ACM); do
+  echo "$arquivo" | grep -qE "$ISENTOS" && continue
+  linhas=$(git diff --cached -U0 -- "$arquivo" | grep -E '^\+[^+]' | grep -nIE -e "$PADROES")
+  [ -n "$linhas" ] && achados="$achados
+$arquivo: $linhas"
+done
+
+if [ -n "$achados" ]; then
+  echo ""
+  echo "COMMIT BARRADO — isto parece credencial:"
+  echo "$achados" | head -6
+  echo ""
+  echo "Credencial no histórico do git é permanente. Tire do arquivo e ponha no"
+  echo "cofre (Secret Manager) ou num arquivo do .gitignore."
+  echo "Se for alarme falso: git commit --no-verify"
+  echo ""
+  exit 1
+fi

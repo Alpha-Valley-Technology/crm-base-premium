@@ -1,0 +1,219 @@
+/* TOKENS — a única fonte de valores do produto (Padrão E3 do guia da agência).
+ *
+ * ---------------------------------------------------------------------------
+ * ARQUÉTIPO: A1 — SUÍÇO MINIMAL. (Registrado em docs/decisoes.md.)
+ * ---------------------------------------------------------------------------
+ *
+ * Precisão, calma, competência. Quase-branco dominante, UM acento usado com
+ * parcimônia, grid rígido, tudo alinhado à esquerda, movimento mínimo.
+ *
+ * É o arquétipo certo para este produto por um motivo específico: quem entra
+ * aqui vem ESTUDAR ou vem ADMINISTRAR. Nos dois casos o protagonista é o
+ * conteúdo — a aula, a pergunta do fórum, o catálogo. Direção que compete com
+ * conteúdo (A2 escuro com neon, A5 bold) transformaria a casca em atração e o
+ * conteúdo em plano de fundo.
+ *
+ * DESVIO REGISTRADO: o acento é CONFIGURÁVEL pelo cliente (identidade do site).
+ * A1 pede "um acento frio discreto"; aqui ele é uma variável de produto, porque
+ * esta é a base de uma área de membros vendida a vários negócios. O que a
+ * doutrina garante é o RESTO: os neutros, a escala, o raio, a curva e o ritmo
+ * não mudam de cliente para cliente — só a cor muda. Ver `base/identidade.js`.
+ *
+ * ---------------------------------------------------------------------------
+ * VALOR FORA DESTA LISTA É ERRO ("valor mágico").
+ * ---------------------------------------------------------------------------
+ */
+
+:root {
+  /* ---- Cor: marca ----------------------------------------------------- */
+  /* O acento aparece POUCO (metodologia 60-30-10). Quanto mais rara a cor
+   * forte, mais poder ela tem — e é por isso que "visível" deixou de ser uma
+   * etiqueta colorida no painel de conteúdo. */
+  --cor-principal: #4f46e5;
+  --cor-principal-2: #7c3aed;
+  --cor-principal-hover: #4338ca;
+  --grad-principal: linear-gradient(135deg, #4f46e5, #7c3aed);
+
+  /* ---- Cor: neutros em camadas de elevação ---------------------------- */
+  /* NUNCA #fff e #000 puros como dominantes: os neutros carregam a
+   * temperatura da marca (levemente azulados aqui). É o que dá "clima" sem o
+   * usuário saber por quê. */
+  --cor-fundo: #ffffff;
+  --cor-superficie: #f4f5fb;
+  --cor-superficie-2: #eceefb;
+  --cor-borda: #e4e5f0;
+  /* Borda translúcida: acabamento de vidro em vez de cinza chapado
+   * (microdetalhe 6 do manual de design). */
+  --linha: rgba(26, 28, 46, 0.1);
+  --cor-texto: #1a1c2e;
+  --cor-texto-fraco: #6b6f8a;
+  /* O tom das ações em repouso: presente, discreto e AINDA LEGÍVEL.
+   * Medido contra o branco em 3,6:1 — acima do mínimo de 3:1 que a norma exige
+   * para o desenho de um controle. É o degrau mais claro que ainda passa; abaixo
+   * dele o botão vira decoração para quem enxerga pouco. */
+  --cor-acao-quieta: #7d8195;
+
+  /* ---- A cor do hover ------------------------------------------------- */
+  /*
+   * No CLARO, o hover é um cinza levíssimo: sobre fundo branco, qualquer coisa
+   * mais forte que isso vira uma mancha que puxa o olho para o lugar onde o
+   * mouse passou por acaso.
+   *
+   * No ESCURO é o contrário — ver o bloco `[data-tema="escuro"]` no fim deste
+   * arquivo.
+   */
+  --cor-hover: var(--cor-superficie);
+  --cor-hover-forte: var(--cor-superficie-2);
+
+  /* ---- Cor: funcionais, dessaturadas ao tema -------------------------- */
+  /* Verde-bandeira e vermelho-puro gritam "template". */
+  --cor-ok: #16a34a;
+  --cor-erro: #dc2626;
+  --cor-atencao: #b45309;
+
+  /* ---- Espaço: uma escala só, de 4px ---------------------------------- */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+  --espaco: var(--s-4); /* nome antigo, mantido: é usado no shell */
+
+  /* ---- Forma: raios com lógica ---------------------------------------- */
+  /* Elemento pequeno, raio menor; container, raio maior. Nunca valores
+   * aleatórios misturados (microdetalhe 4). */
+  --raio-xs: 6px;
+  --raio-sm: 10px;
+  --raio: 14px;
+  --raio-lg: 18px;
+  --raio-redondo: 999px;
+
+  /* ---- Elevação: duas camadas, tingidas ------------------------------- */
+  /* Uma sombra curta e escura + uma longa e suave, com a temperatura do fundo
+   * — nunca preto puro chapado (microdetalhe 5). */
+  --sombra: 0 1px 2px rgba(26, 28, 46, 0.06), 0 4px 16px rgba(30, 32, 60, 0.08);
+  /* ⚠️ A SOMBRA SEGUE A MARCA DO CLIENTE, e não a nossa.
+   *
+   * Ela era o índigo #4f46e5 escrito à mão. Num cliente white-label de marca
+   * laranja, todo botão e todo card em destaque ganhavam um halo roxo — a nossa
+   * cor aparecendo no produto dele, no lugar onde ninguém pensa em procurar.
+   *
+   * `--cor-principal` já é a cor escolhida no painel; a sombra passa a sair
+   * dela. `color-mix` com `transparent` é como se faz alfa a partir de uma cor
+   * que só se conhece em tempo de execução. */
+  --sombra-forte:
+    0 2px 6px color-mix(in srgb, var(--cor-principal) 12%, transparent),
+    0 10px 28px color-mix(in srgb, var(--cor-principal) 20%, transparent);
+
+  /* ---- Movimento: a escala da casa ------------------------------------ */
+  /* micro 150ms · estado 300ms · entrada 600–800ms. Fora da escala = fora do
+   * padrão. Entradas em ease-out (chega rápido, assenta suave). */
+  --t-micro: 0.15s;
+  --t-estado: 0.3s;
+  --t-entrada: 0.7s;
+  --curva-entrada: cubic-bezier(0.16, 0.84, 0.28, 1);
+  --curva-estado: cubic-bezier(0.4, 0.2, 0.2, 1);
+
+  /* ---- Camadas: escala fechada ---------------------------------------- */
+  /* Z-index inventado no meio do CSS é como a sobreposição quebra em silêncio
+   * seis meses depois. */
+  --z-topo: 20;
+  --z-overlay: 30;
+  --z-gaveta: 40;
+  --z-modal: 50;
+  --z-aviso: 60;
+
+  /* ---- As três áreas com cor própria ---------------------------------- */
+  /*
+   * Topo, corpo e rodapé podem ser pintados na Configuração. Elas nascem
+   * apontando para os neutros do tema — assim quem não configurar nada tem um
+   * produto coerente, e quem configurar uma só não precisa configurar as três.
+   */
+  --cor-topo: var(--cor-fundo);
+  --cor-conteudo: var(--cor-superficie);
+  --cor-rodape: var(--cor-fundo);
+
+  /* ---- A largura da coluna de conteúdo -------------------------------- */
+  /*
+   * 1120px. O número não é chute nem gosto: é a MEDIDA DE LEITURA.
+   *
+   * O manual pede parágrafo entre 45 e 75 caracteres — passando disso, o olho
+   * perde a linha ao voltar para a esquerda e a pessoa relê sem perceber. No
+   * nosso corpo de texto, 1120px dá em torno de 100 caracteres no texto solto,
+   * que já é o teto do aceitável — e as telas deste produto são de cartão e
+   * painel, não de parágrafo corrido, então ela cabe bem.
+   *
+   * Por que ela funciona nas duas máquinas que importam aqui:
+   *
+   *   notebook 1366–1440 → sobram ~36px de cada lado: a tela fica CHEIA, sem
+   *                        aquela sensação de conteúdo espremido no canto.
+   *   monitor 1920+      → a coluna centraliza e para de esticar. Sem isso, uma
+   *                        linha de texto atravessa 1600px e vira ilegível.
+   *
+   * Testado em 1280, 1440 e 1920 antes de virar token.
+   */
+  --container: 1120px;
+
+  /* ---- Tipografia ------------------------------------------------------ */
+  --fonte: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ===========================================================================
+ * O TEMA ESCURO
+ * ===========================================================================
+ *
+ * É ESCOLHA DO DONO, e não do aluno: identidade do produto, como a cor da marca
+ * e a fonte. Ligado na Configuração, ele estampa `data-tema="escuro"` na raiz e
+ * este bloco redefine os NEUTROS — e só eles. A cor de marca continua sendo a
+ * que o cliente escolheu.
+ *
+ * TEMA ESCURO É DIREÇÃO, E NÃO INVERSÃO. Não é trocar branco por preto: são
+ * camadas de elevação (fundo → superfície → superfície elevada, cada uma um
+ * passo mais clara), sombra trocada por borda translúcida, e os funcionais
+ * puxados para versões que pertencem ao escuro — verde-bandeira e vermelho puro
+ * gritam num fundo escuro.
+ *
+ * O quase-preto é AZULADO, com a mesma temperatura dos neutros claros: é o que
+ * faz os dois temas parecerem o mesmo produto em dois humores, e não dois
+ * produtos.
+ */
+:root[data-tema='escuro'] {
+  --cor-fundo: #12131c;
+  --cor-superficie: #0d0e15;
+  --cor-superficie-2: #1c1e2b;
+  --cor-borda: #262838;
+  --linha: rgba(238, 240, 248, 0.12);
+  --cor-texto: #eef0f6;
+  --cor-texto-fraco: #9aa0b5;
+  /* O tom quieto das ações, medido contra o fundo escuro em ~4:1. */
+  --cor-acao-quieta: #7f869c;
+
+  --cor-ok: #4ade80;
+  --cor-erro: #f87171;
+  --cor-atencao: #fbbf24;
+
+  /* ⚠️ O HOVER NO ESCURO SEGUE A COR DE DESTAQUE, e não o cinza.
+   *
+   * No claro, o hover é um cinza levíssimo sobre branco — e funciona, porque
+   * qualquer escurecimento sobre branco é visível.
+   *
+   * No escuro, esse mesmo raciocínio quebra: clarear um pouquinho um fundo já
+   * escuro dá uma diferença que quase ninguém enxerga, e o produto passa a
+   * parecer que não responde ao mouse. Fundo escuro precisa de COR para
+   * mostrar reação, não de mais um passo de cinza.
+   *
+   * A cor usada é a da MARCA, misturada com transparência — então ela
+   * acompanha o cliente: quem trocar o acento para verde ganha hover verde,
+   * sem tocar em nenhuma destas linhas.
+   */
+  --cor-hover: color-mix(in srgb, var(--cor-principal) 22%, transparent);
+  --cor-hover-forte: color-mix(in srgb, var(--cor-principal) 34%, transparent);
+
+  /* No escuro, sombra preta não aparece: quem separa as camadas é a borda
+   * translúcida, e a sombra vira só profundidade discreta. */
+  --sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
+  --sombra-forte: 0 2px 8px rgba(0, 0, 0, 0.4), 0 14px 34px rgba(0, 0, 0, 0.5);
+}

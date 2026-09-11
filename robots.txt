@@ -1,0 +1,6 @@
+# A área de membros é fechada: o robô só encontraria a casca vazia, e um
+# endereço de aula indexado é um convite a tentar abri-lo sem pagar.
+User-agent: *
+Disallow: /index.html
+Disallow: /oferta/
+Allow: /login.html

@@ -1,0 +1,159 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // "Estar autenticado" não quer dizer NADA aqui: entrar com o Google cria a
+    // conta de login mesmo quando o acesso ao sistema é negado. A regra antiga
+    // (`request.auth != null`) liberava qualquer pessoa do planeta com uma
+    // conta Google.
+    //
+    // O carimbo `equipe` é posto no token pelo servidor quando a pessoa entra
+    // na equipe, e tirado quando ela sai ou é desativada — ver
+    // functions/_lib/claims.js. Ler do token em vez de consultar o Firestore
+    // aqui deixa a regra provável em teste e sem custo de leitura.
+    function ehDaEquipe() {
+      return request.auth != null && request.auth.token.equipe == true;
+    }
+
+    function ehAdmin() {
+      return ehDaEquipe() && request.auth.token.papel == 'admin';
+    }
+
+    // ---- O GESTOR ----
+    //
+    // ⚠️ SEM ESTA FUNÇÃO, O GESTOR PUBLICA A AULA E NÃO CONSEGUE SUBIR A CAPA.
+    //
+    // É o tipo de meia-permissão que gera chamado de suporte no primeiro dia:
+    // o texto salva, a imagem volta 403, e a pessoa não tem como adivinhar que
+    // o problema é o papel dela.
+    //
+    // O carimbo `papel` vem do token (ver `functions/_lib/claims.js`), e não do
+    // Firestore: regra do Storage que consulta o banco não é provável em teste
+    // — e regra que não se prova é esperança, não trava.
+    function ehGestor() {
+      return ehDaEquipe() && request.auth.token.papel in ['admin', 'gestor'];
+    }
+
+    // Só imagem, e pequena. Sem isto o Storage vira hospedagem grátis de
+    // qualquer arquivo — inclusive executável — paga pela conta do dono.
+    function arquivoAceitavel() {
+      return request.resource != null
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/(png|jpeg|jpg|webp|gif)');
+    }
+
+    // ---- A IDENTIDADE VISUAL: as únicas imagens que o mundo lê ----
+    //
+    // POR QUE ELAS PRECISAM SER PÚBLICAS.
+    //
+    // A tela de entrada mostra logo e imagem de fundo ANTES de qualquer login.
+    // Sob a regra da equipe, essas imagens voltariam 403 para o visitante — a
+    // tela de login apareceria quebrada para exatamente quem ela existe para
+    // receber.
+    //
+    // O QUE ISSO CUSTA, dito com todas as letras: quem descobrir o endereço de
+    // um arquivo daqui consegue baixá-lo. É o propósito — são o logo e o fundo
+    // do site, feitos para aparecer. Conteúdo de membro NÃO entra aqui, e a
+    // pasta se chama `publico` para quem for mexer daqui a seis meses ler o
+    // aviso antes de escrever qualquer coisa.
+    //
+    // Escrita só de ADMIN: identidade do site não é trabalho de aluno.
+    match /publico/{arquivo=**} {
+      allow read: if true;
+      allow write: if ehAdmin() && arquivoAceitavel();
+      allow delete: if ehAdmin();
+    }
+
+    // ---- O conteúdo do catálogo: capas de curso, módulo e aula ----
+    //
+    // ⚠️ ESCRITA E APAGAMENTO SÃO DE ADMIN, e isto foi um conserto.
+    //
+    // Antes bastava `ehDaEquipe()` — ou seja, qualquer aluno. Ele nunca vê um
+    // botão que envie para cá: quem envia é o editor de conteúdo, que só o
+    // admin abre. Mas as regras não protegem botões, protegem caminhos, e pelo
+    // console qualquer membro trocava a capa de todos os cursos por outra
+    // imagem — ou apagava o catálogo visual inteiro, arquivo por arquivo.
+    //
+    // Nada se perderia do conteúdo em si (os textos estão no Firestore), e é
+    // justamente isso que faria o estrago demorar a ser notado: as telas
+    // continuariam de pé, só que sem imagem, sem ninguém saber por quê.
+    match /conteudo/{arquivo=**} {
+      allow read: if ehDaEquipe();
+      allow write: if ehGestor() && arquivoAceitavel();
+      allow delete: if ehGestor();
+    }
+
+    // ---- OS MATERIAIS DA AULA: a única pasta que aceita PDF ----
+    //
+    // ⚠️ PASTA PRÓPRIA, E NÃO `conteudo/`. Aquela só aceita imagem
+    // (`arquivoAceitavel`), e é assim que ela deve continuar: o dia em que
+    // alguém afrouxar aquela regra para caber um PDF, ela passa a aceitar PDF
+    // em TODA capa de curso, módulo e aula.
+    //
+    // AQUI SÓ PDF, e a lista curta é a trava. O comentário lá em cima vale
+    // inteiro para este bloco: sem limite de tipo, o Storage vira hospedagem
+    // grátis de qualquer arquivo — inclusive executável — paga pela conta do
+    // dono. Documento do Office, ZIP e vídeo ficaram DE FORA de propósito:
+    //
+    //   Office e ZIP → carregam macro e executável, e o aluno abre confiando
+    //                  que veio da comunidade. Para eles existe o link da
+    //                  pasta do Drive, que é do cliente e não da nossa conta.
+    //   vídeo        → tem lugar próprio, que é o player. Um MP4 de 300 MB
+    //                  virando download seria a maior conta do mês.
+    //
+    // 25 MB porque apostila em PDF passa dos 10 MB das imagens, e o que passa
+    // de 25 quase sempre é vídeo disfarçado ou digitalização mal feita.
+    //
+    // LÊ QUEM É DA EQUIPE: material de aula é conteúdo pago. Escreve e apaga só
+    // ADMIN, pela mesma razão do catálogo — as regras protegem caminhos, não
+    // botões, e pelo console um membro trocaria a apostila de todas as aulas.
+    match /materiais/{arquivo=**} {
+      allow read: if ehDaEquipe();
+      allow write: if ehGestor()
+        && request.resource != null
+        && request.resource.size < 25 * 1024 * 1024
+        && request.resource.contentType == 'application/pdf';
+      allow delete: if ehGestor();
+    }
+
+    // ---- A FOTO DE PERFIL: a única pasta onde o membro escreve ----
+    //
+    // Cada pessoa escreve DENTRO DA PRÓPRIA PASTA, com o nome dela sendo o uid.
+    // Sem esse recorte, "membro pode enviar foto" viraria "membro pode trocar a
+    // foto de qualquer pessoa" — e a Conexão inteira depende de a foto ser de
+    // quem ela diz ser.
+    //
+    // Todo membro LÊ, porque a lista da Conexão mostra as fotos de todo mundo
+    // que se ofereceu para aparecer.
+    //
+    // O teto é menor que o do catálogo: foto de perfil aparece do tamanho de
+    // uma moeda, e 3 MB já é generoso. Arquivo grande aqui é celular mandando o
+    // original de 12 MP — que custa banda de quem abre a lista, não de quem
+    // enviou.
+    match /perfis/{uid}/{arquivo=**} {
+      allow read: if ehDaEquipe();
+      allow write: if ehDaEquipe() && request.auth.uid == uid
+        && request.resource != null
+        && request.resource.size < 3 * 1024 * 1024
+        && request.resource.contentType.matches('image/(png|jpeg|jpg|webp)');
+      allow delete: if ehDaEquipe() && request.auth.uid == uid;
+    }
+
+    // NÃO EXISTE REGRA CURINGA AQUI, e a falta dela é a trava.
+    //
+    // Antes existia um `match /{allPaths=**}` liberando a equipe em qualquer
+    // pasta. Como as regras do Storage são OU — igual às do Firestore —, esse
+    // curinga também casava com `publico/...`, e um membro comum escrevia na
+    // identidade do site por ele. A regra estrita de cima não anulava nada.
+    //
+    // A primeira tentativa de conserto foi excluir o prefixo dentro do curinga
+    // (`!string(allPaths).matches(...)`). `string()` não existe nas regras do
+    // Storage: a expressão falhava e passava a NEGAR tudo, inclusive o que
+    // devia funcionar. Os testes pegaram.
+    //
+    // A saída é esta: prefixo declarado, um bloco por finalidade, e o que não
+    // estiver escrito é recusado pelo padrão do Firebase. Pasta nova exige
+    // bloco novo — e esquecer trava o envio, que aparece na hora, em vez de
+    // abrir a pasta em silêncio.
+  }
+}

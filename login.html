@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Provisório: `base/login.js` troca pelo nome do produto assim que
+       carrega. Fica neutro de propósito — este é o texto que um cliente
+       white-label veria na aba no primeiro instante, e o buscador indexa. -->
+    <title>Entrar</title>
+    <!-- Ícone da aba. A identidade do banco troca isto em tempo de execução
+       (base/identidade.js); estes arquivos são o que aparece antes dela chegar,
+       e o que fica quando ninguém configurou nada.
+       AO TROCAR OS ARQUIVOS, SUBA O `?v=`. Navegador guarda favicon com teimosia
+       extra — ele sobrevive a recarga forçada e ignora o cabeçalho de cache. -->
+    <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png?v=2" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
+    <meta name="theme-color" content="#4f46e5" />
+    <link rel="stylesheet" href="styles/tokens.css" />
+    <link rel="stylesheet" href="styles/base.css" />
+    <link rel="stylesheet" href="styles/components.css" />
+  </head>
+  <body class="entrada">
+    <!--
+    DUAS METADES NO DESKTOP, UMA NO CELULAR.
+
+    Desktop: imagem à esquerda, entrada à direita. A imagem não é enfeite — é o
+    que diz "isto é a comunidade tal" antes de a pessoa ler qualquer
+    palavra, e é o que separa uma área de membros de um formulário de banco.
+
+    Celular: a mesma imagem vira FUNDO e a caixa de entrada vai para o centro.
+    Meia tela de imagem num aparelho de 390px não sobra espaço para o resto.
+
+    Sem imagem configurada, o lado esquerdo fica com o gradiente da marca. Nunca
+    aparece metade branca: é melhor uma cor de propósito que um vazio.
+  -->
+    <div class="entrada-imagem" id="entrada-imagem" aria-hidden="true"></div>
+
+    <div class="entrada-painel">
+      <div class="entrada-caixa">
+        <img id="logo" class="entrada-logo" alt="" hidden />
+
+        <!-- O NOME DO PRODUTO, não a palavra "Entrar". Esta é a primeira tela que
+           qualquer pessoa vê, e ela dizia o que a pessoa vai FAZER em vez de
+           onde ela está chegando — o botão logo abaixo já diz o que fazer.
+           Some quando há logo: dizer o nome duas vezes não diz mais. -->
+        <h2 id="marca" class="app-marca entrada-marca"></h2>
+
+        <p class="entrada-texto">Entre com o email que foi cadastrado para você.</p>
+
+        <button id="btGoogle" class="btn entrada-botao">Entrar com Google</button>
+
+        <!-- AS DUAS PORTAS, e o Google primeiro de propósito: é um clique contra
+           dois campos, e quem tem Gmail entra sem lembrar de senha nenhuma.
+           A senha existe para quem NÃO tem — comprou com email corporativo, do
+           Outlook, do provedor da empresa. Sem ela, isso é venda perdida. -->
+        <div class="entrada-ou"><span>ou entre com email e senha</span></div>
+
+        <form id="formSenha" class="entrada-form" novalidate>
+          <label class="entrada-campo">
+            Email
+            <input type="email" id="email" class="input" autocomplete="email" required />
+          </label>
+          <label class="entrada-campo">
+            Senha
+            <input
+              type="password"
+              id="senha"
+              class="input"
+              autocomplete="current-password"
+              required
+            />
+          </label>
+          <button type="submit" class="btn btn--secundario entrada-botao">Entrar</button>
+        </form>
+
+        <!-- PRIMEIRO ACESSO E SENHA ESQUECIDA SÃO O MESMO BOTÃO. É o mesmo email
+           do Firebase, e separar em dois caminhos daria duas telas para manter e
+           uma dúvida a mais para quem chega: "sou primeiro acesso ou esqueci?" -->
+        <button type="button" id="btEsqueci" class="entrada-link">
+          Primeiro acesso ou esqueci minha senha
+        </button>
+
+        <!-- A PILHA DE BOTÕES: Suporte e Financeiro, um embaixo do outro.
+           NASCE VAZIA. Cada botão só aparece quando o número dele foi cadastrado
+           na tela de Equipe. Botão que não leva a lugar nenhum é pior que botão
+           nenhum: quem clica nele já estava com problema. -->
+        <div id="contatos" class="pilha-contatos"></div>
+        <p id="erro" class="entrada-erro"></p>
+      </div>
+    </div>
+
+    <script type="module" src="./base/login.js"></script>
+  </body>
+</html>

@@ -1,0 +1,114 @@
+# A comunidade inteira de pé na sua máquina: banco, login, arquivos, funções e
+# o site. Sobe com `npm run docker:subir`.
+#
+# ⚠️ POR QUE ESTA PASTA COMEÇA COM PONTO.
+#
+# `firebase.json` publica a raiz do projeto (`"public": "."`), e a lista
+# `ignore` dele exclui `**/.*` e `**/.*/**`. Uma pasta chamada `docker/` seria
+# publicada junto com o site — qualquer pessoa leria a receita da nossa
+# infraestrutura em `https://seu-site/docker/compose.yml`. Chamada `.docker/`,
+# ela fica de fora sozinha, sem precisar acrescentar linha nenhuma no
+# `firebase.json` — que é config de homologação e produção, e não se mexe.
+
+name: crm-base-premium-local
+
+services:
+  emuladores:
+    build:
+      context: ..
+      dockerfile: .docker/Dockerfile
+    image: crm-base-premium/emuladores
+    # O emulador exporta o banco ao receber o pedido de parada. 45s é folga
+    # para ele terminar de gravar antes de o Docker perder a paciência e matar.
+    stop_grace_period: 45s
+    # Um processo de verdade no lugar 1, que repassa sinal e recolhe processo
+    # órfão. Sem ele, `firebase` deixa filho solto ao morrer.
+    init: true
+
+    env_file:
+      # Opcional: crie `.docker/.env` com PROJETO_LOCAL=... para apontar o
+      # ambiente local para outro projeto sem tocar em `base/firebase.js`.
+      - path: .env
+        required: false
+
+    volumes:
+      # O projeto entra vivo: o que você salva no editor é o que o site serve,
+      # sem rebuild e sem reiniciar.
+      - ..:/app
+      # O banco local. Fica em volume, e não numa pasta do projeto, para não
+      # aparecer no `git status` — árvore suja barra o deploy (`npm run portao`),
+      # e o banco de brincadeira não tem por que estar no histórico.
+      - dados:/dados
+      # Ver `entrada.mjs`, item 3: pacote de Windows não roda em Linux.
+      - deps_functions:/app/functions/node_modules
+
+    ports:
+      # ⚠️ O `127.0.0.1:` NA FRENTE É DE PROPÓSITO, e não é enfeite.
+      #
+      # Sem ele, o Docker publica em 0.0.0.0 e o emulador — que não pede senha e
+      # aceita `Bearer owner` como dono — fica alcançável por qualquer máquina
+      # da rede: o café, o hotel, o coworking. Com ele, só este computador vê.
+      - '127.0.0.1:5000:5000' # o site
+      - '127.0.0.1:4000:4000' # o painel dos emuladores
+      - '127.0.0.1:9099:9099' # login
+      - '127.0.0.1:8080:8080' # banco (Firestore)
+      - '127.0.0.1:9199:9199' # arquivos (Storage)
+      - '127.0.0.1:5001:5001' # funções
+      - '127.0.0.1:4400:4400' # central: é por ela que as ferramentas acham o resto
+      - '127.0.0.1:4500:4500' # registro de eventos, usado pelo painel
+
+    healthcheck:
+      # Pergunta à central quem está de pé. Enquanto isso não responde, o
+      # container aparece como `starting` — e não como `up` mentindo.
+      #
+      # ⚠️ O QUE ELE PROVA, exatamente: que os emuladores estão escutando. NÃO
+      # prova que as Functions terminaram de carregar — elas levam alguns
+      # segundos a mais, e chamar uma nesse intervalo devolve "function does not
+      # exist", que parece defeito e não é. O sinal de que TUDO está pronto é a
+      # moldura "All emulators ready!" nos registros (`npm run docker:logs`).
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:4400/emulators').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
+
+  # ---------------------------------------------------------------------------
+  # A suíte de regras, que precisa de Java e por isso mora aqui
+  # ---------------------------------------------------------------------------
+  #
+  # `npm test` sobe um emulador de Firestore e outro de Storage para provar as
+  # regras do banco. Numa máquina sem Java instalado, ela não roda de jeito
+  # nenhum — e "não roda" vira "não rodei", que é como uma regra de acesso
+  # quebrada chega em produção.
+  #
+  # Sobe sob perfil: não entra no `docker compose up` do dia a dia. Roda com
+  # `npm run docker:testar`, em container próprio, com portas não publicadas —
+  # então convive com o ambiente que já estiver de pé.
+  testes:
+    profiles: ['testes']
+    build:
+      context: ..
+      dockerfile: .docker/Dockerfile
+    image: crm-base-premium/emuladores
+    init: true
+    working_dir: /app
+    volumes:
+      - ..:/app
+      - deps_raiz:/app/node_modules
+      - deps_functions:/app/functions/node_modules
+    command:
+      - sh
+      - -c
+      - >
+        node /app/.docker/preparar-testes.mjs && npm test
+
+volumes:
+  dados:
+  deps_raiz:
+  deps_functions:

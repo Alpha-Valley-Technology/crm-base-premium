@@ -1,0 +1,21 @@
+node_modules/
+functions/node_modules/
+.firebase/
+*.log
+.env
+.env.*
+functions/.secret.local
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+.superpowers/
+.playwright-mcp/
+.eslintcache
+coverage/
+.vscode/
+.idea/
+
+# Gerado pelo container a cada `docker compose up`: é o `firebase.json` com os
+# emuladores escutando em 0.0.0.0, que é o que o Docker exige. Derivado, nunca
+# editado à mão — ver `.docker/entrada.mjs`.
+.firebase.docker.json

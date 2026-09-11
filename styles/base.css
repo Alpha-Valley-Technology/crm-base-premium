@@ -1,0 +1,1205 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* `hidden` TEM QUE ESCONDER — e sozinho ele não esconde.
+ *
+ * O navegador aplica `[hidden] { display: none }` como estilo de usuário, que
+ * QUALQUER regra de classe do produto vence. Uma linha inocente como
+ * `.previa { display: block }` faz o elemento reaparecer com `hidden` marcado
+ * — e o que sobra na tela é um retângulo de 1px com borda, sem conteúdo, que
+ * ninguém consegue explicar de onde vem.
+ *
+ * Foi exatamente isso que apareceu como um "ponto" solto no campo de imagem de
+ * todos os editores do sistema. `!important` aqui é o uso legítimo: `hidden` é
+ * declaração de intenção do HTML, e nenhuma regra de aparência deveria poder
+ * discordar dela. */
+[hidden] {
+  display: none !important;
+}
+body {
+  font-family: var(--fonte);
+  color: var(--cor-texto);
+  background: var(--cor-conteudo);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===========================================================================
+ * OS OBRIGATÓRIOS DA CASA
+ * ===========================================================================
+ *
+ * Guia da agência, Parte 7 (Bloco 12) e Parte 8.5 (microdetalhes 1, 2 e 9) +
+ * Parte 9 (acessibilidade). São quatro regras curtas e nenhuma é enfeite: as
+ * três primeiras decidem se a pessoa CONSEGUE usar o sistema.
+ */
+
+/* 1. MOVIMENTO REDUZIDO — obrigatório em todo projeto.
+ *
+ * Quem marca essa preferência no sistema operacional costuma ter um motivo de
+ * saúde: transição que desliza provoca enjoo e enxaqueca em quem tem distúrbio
+ * vestibular. Não é sobre gosto por animação.
+ *
+ * `!important` é permitido aqui: é o único caso em que a preferência da pessoa
+ * tem que ganhar de qualquer regra que o produto escreva depois. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* 2. FOCO DESENHADO. O anel padrão do navegador some em fundo claro e some de
+ * vez sobre a cor da marca — e sem ele quem navega por teclado fica perdido no
+ * meio da tela, sem saber onde está.
+ *
+ * `:focus-visible` e não `:focus`: o anel aparece para o teclado e NÃO aparece
+ * ao clicar com o mouse, que é o comportamento que as pessoas esperam. */
+:focus-visible {
+  outline: 2px solid var(--cor-principal);
+  outline-offset: 2px;
+  border-radius: var(--raio-xs);
+}
+
+/* 3. O ATALHO DO TECLADO. Sem ele, quem usa teclado atravessa a barra lateral
+ * inteira — dez itens — a cada troca de tela, antes de chegar ao conteúdo.
+ * Fica escondido até receber foco, e aí aparece. */
+.pular-para-conteudo {
+  position: absolute;
+  left: var(--s-4);
+  top: -100px;
+  z-index: var(--z-aviso);
+  background: var(--cor-principal);
+  color: #fff;
+  font-weight: 600;
+  padding: var(--s-2) var(--s-4);
+  border-radius: var(--raio-sm);
+  text-decoration: none;
+  transition: top var(--t-micro);
+}
+.pular-para-conteudo:focus-visible {
+  top: var(--s-4);
+}
+
+/* 4. A SELEÇÃO NA COR DA MARCA. Detalhe de dois por cento: quando a pessoa
+ * seleciona um texto e o azul do sistema aparece, o produto lembra que é uma
+ * página. Na cor da marca, ele continua sendo um produto. */
+::selection {
+  background: var(--cor-principal);
+  color: #fff;
+}
+
+/* 5. A BARRA DE ROLAGEM das áreas internas: fina e na paleta, em vez do cinza
+ * do sistema atravessando o painel. */
+.app-content,
+.app-sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--cor-borda) transparent;
+}
+/* A caixa do app ocupa a altura da tela mesmo ANTES da grade existir — é o que
+ * permite ao "Carregando" do início se centralizar sozinho, sem conta fixa.
+ * `dvh` em vez de `vh`: no celular a barra do navegador aparece e some, e `vh`
+ * ignora isso. */
+#app {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* A ALTURA DA FAIXA VIRA TOKEN porque três coisas dependem dela: a linha da
+ * grade, o respiro do conteúdo (que agora passa por baixo) e o ponto em que a
+ * faixa volta a ter fundo ao rolar. Cravada em três lugares, ela sairia de
+ * sincronia no primeiro ajuste. */
+.app-shell {
+  --altura-topo: 52px;
+  display: grid;
+  grid-template-columns: 248px 1fr;
+  grid-template-rows: var(--altura-topo) 1fr;
+  height: 100vh;
+  position: relative;
+}
+/* `1 / -1` = "da primeira até a última coluna, quantas forem". Com `1 / 3`
+ * fixo, no celular — onde a grade tem UMA coluna — o navegador inventava uma
+ * segunda coluna só para o cabeçalho caber, e ela comia metade da largura do
+ * conteúdo. */
+/* `flex-start` porque agora só há sanduíche e marca — o usuário foi para o pé
+ * da barra. Com `space-between` sobrando de quando eram três itens, a marca era
+ * jogada contra a borda direita no celular. */
+/* A FAIXA DO TOPO carrega o SINO, e é por isso que ela existe.
+ * Ela já foi embora uma vez: quando só levava o nome do produto repetido,
+ * custava 60px de altura em toda tela para não dizer nada. Faixa que leva um
+ * sinal ao vivo paga o espaço que ocupa — 52px, e só sobre o conteúdo.
+ * No celular ela atravessa a tela inteira e leva também o sanduíche e a
+ * marca, porque lá a barra lateral é gaveta fechada. */
+/* ⚠️ A FAIXA É OPACA, e a mistura com `--cor-conteudo` NÃO é um detalhe de
+ * gosto — é o que a mantém idêntica ao que sempre foi.
+ *
+ * Ela era `84% da cor do topo + transparente`, composta sobre o fundo da
+ * página. Não havia nada atrás dela, então o resultado era uma cor chapada.
+ *
+ * Quando o cabeçalho passou a flutuar POR CIMA do conteúdo — o que deixa a
+ * imagem do hero correr por baixo dele —, esses 16% de transparência deixaram
+ * de mostrar o fundo e passaram a mostrar o TEXTO rolando: uma sombra de letras
+ * fantasma em toda tela do sistema.
+ *
+ * Misturar com `--cor-conteudo` dá exatamente a cor que aquela composição já
+ * produzia, agora chapada. Mesma aparência de antes, sem nada atravessando.
+ *
+ * O desfoque saiu daqui pelo mesmo motivo: não há o que desfocar atrás de uma
+ * cor opaca, e ele só custava GPU. Ele volta — aí sim com função — no estado
+ * rolado do hero de ponta a ponta, lá embaixo. */
+.app-header {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 0 20px;
+  background: color-mix(in srgb, var(--cor-topo) 84%, var(--cor-conteudo));
+  border-bottom: 1px solid var(--cor-borda);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  transition:
+    background-color 0.25s var(--curva-estado),
+    border-color 0.25s var(--curva-estado);
+}
+/* COR SÓLIDA quando o dono escolheu uma; gradiente da marca quando não.
+ * Um `background` aceita os dois — cor e gradiente —, então o mesmo recorte de
+ * texto serve para os dois casos sem uma segunda regra. */
+.app-header strong {
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  font-family: var(--fonte-logo, var(--fonte-titulo, var(--fonte)));
+  background: var(--cor-logo, var(--grad-principal));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.app-marca {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  text-decoration: none;
+  border-radius: var(--raio-sm);
+  padding: 4px 8px;
+  margin-left: -8px;
+  transition: opacity 0.15s;
+}
+/* ⚠️ O LOGO NÃO ACENDE AO PASSAR O MOUSE, e isso é decisão, não esquecimento.
+ *
+ * Ele é clicável e leva à Página Inicial — como o logo de qualquer site. Mas
+ * ele é a MARCA, e não um botão: pintar um retângulo colorido atrás dela é
+ * enquadrar a identidade do cliente numa caixinha de interface toda vez que o
+ * dedo passa por perto.
+ *
+ * O `:active` fica: ele é a confirmação do toque no celular, onde não existe
+ * "passar o mouse" e a pessoa precisa saber que o toque pegou. */
+.app-marca:active,
+.app-logo:active {
+  opacity: 0.7;
+}
+/* FINA, e não negrito. O nome do produto ao lado já é 800 com gradiente; uma
+   versão também em 700 competia com ele, e duas coisas gritando no topo fazem
+   o olho não saber onde pousar. Rótulo secundário tem que LER como secundário.
+   Sem `text-transform`: o produto escreve a versão como quer que ela apareça
+   ("Lab V1", "v1"), e a carcaça não tem por que corrigir a caixa de um nome
+   que não é dela. */
+.app-versao {
+  font-size: 11.5px;
+  font-weight: 300;
+  letter-spacing: 0.2px;
+  color: var(--cor-texto-fraco);
+}
+.app-header a {
+  color: var(--cor-principal);
+  text-decoration: none;
+  font-weight: 600;
+}
+.app-sidebar {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  background: var(--cor-fundo);
+  border-right: 1px solid var(--cor-borda);
+  padding: 14px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+/* A COLUNA DE CONTEÚDO TEM TETO, e ele é dado pelo PADDING — não por
+ * `max-width` com `margin: auto`.
+ *
+ * A diferença aparece na barra de rolagem: com `max-width`, ela desce pelo meio
+ * da tela, junto da caixa estreitada. Com padding lateral elástico, a área que
+ * rola continua sendo a tela inteira e a barra fica na borda, onde todo mundo
+ * espera encontrá-la.
+ *
+ * `max()` é o piso: em tela estreita a conta daria negativo, e o que vale é o
+ * respiro mínimo. */
+/* ⚠️ A FOLGA LATERAL É DOS FILHOS, e não do container que rola.
+ *
+ * A primeira versão punha o padding no `.app-content` e mandava o rodapé sair
+ * dele com margem negativa. Não funcionou, e o motivo é sutil: `100%` dentro de
+ * `calc()` mede o elemento em que a conta ACONTECE. No container, `100%` era a
+ * área inteira (1672px numa tela de 1920) e dava 276px de folga. No rodapé,
+ * `100%` já era a caixa DE DENTRO do padding (1120px) e dava 24px. A margem
+ * negativa descontava 24 onde precisava descontar 276 — e o rodapé ficava
+ * encolhido no meio, com dois vãos enormes dos lados.
+ *
+ * Com o padding em cada filho, os dois resolvem a MESMA conta sobre a MESMA
+ * largura. O token continua declarado uma vez só; quem o resolve é quem o usa.
+ */
+/* ⚠️ O CONTEÚDO OCUPA AS DUAS LINHAS, e a faixa do topo fica POR CIMA dele.
+ *
+ * Antes eram duas linhas que não se sobrepunham — e por isso um cabeçalho
+ * transparente mostraria a cor de fundo, nunca a imagem do hero: não havia
+ * imagem debaixo dele.
+ *
+ * O `padding-top` do tamanho da faixa é o que mantém TODAS as outras telas
+ * exatamente como estavam: elas começam onde começavam, só que agora o que rola
+ * passa por baixo de um vidro fosco em vez de sumir numa borda.
+ *
+ * O `backdrop-filter: blur(10px)` que a faixa já tinha passou a fazer sentido:
+ * ele existe para desfocar o que passa por baixo, e até agora nada passava. */
+.app-content {
+  --folga-lateral: max(var(--s-5), calc((100% - var(--container)) / 2));
+  grid-column: 2;
+  grid-row: 1 / -1;
+  padding-top: var(--altura-topo);
+  overflow-y: auto;
+  background: var(--cor-conteudo);
+  display: flex;
+  flex-direction: column;
+}
+/* O miolo empurra o rodapé para o fim: com pouco conteúdo, ele fica no pé da
+ * tela em vez de subir e deixar uma faixa vazia embaixo. */
+/* ⚠️ O MIOLO É UMA GRADE DE TRÊS COLUNAS, e a do meio é a coluna de leitura.
+ *
+ * A FOLGA DEIXOU DE SER PADDING porque padding não dá para atravessar.
+ *
+ * Antes, o hero "de ponta a ponta" sangrava com margem negativa do tamanho da
+ * folga — e a conta saía errada por um motivo que não aparece em diff nenhum:
+ * `100%` dentro de `calc()` mede o elemento em que a conta ACONTECE. No miolo,
+ * `100%` era a área inteira (1672px numa tela de 1920) e a folga dava 276px.
+ * Dentro do hero, `100%` já era a coluna de leitura (1120px) e a MESMA conta
+ * dava 24px. O hero sangrava 24px para cada lado e parava em 1168px, quando
+ * devia ir até a borda.
+ *
+ * Com colunas nomeadas, ninguém precisa adivinhar a folga: o hero pede
+ * `sangria-inicio / sangria-fim` e o navegador faz a conta. É o mesmo erro que
+ * encolhia o rodapé, resolvido de um jeito que não pode voltar. */
+.app-miolo {
+  flex: 1;
+  --folga-miolo: var(--folga-lateral);
+  display: grid;
+  grid-template-columns:
+    [sangria-inicio] var(--folga-miolo)
+    [coluna-inicio] minmax(0, 1fr)
+    [coluna-fim] var(--folga-miolo)
+    [sangria-fim];
+  /* Sem isto, a grade estica as seções para preencher a altura sobrando — o
+   * `flex: 1` acima existe para empurrar o rodapé, e não para inchar o
+   * conteúdo. */
+  align-content: start;
+  padding: var(--s-5) 0;
+}
+/* Tudo mora na coluna de leitura. Quem quiser atravessar pede por nome. */
+.app-miolo > * {
+  grid-column: coluna-inicio / coluna-fim;
+}
+
+/* O rodapé mora DENTRO da área que rola, e aparece quando a pessoa chega ao
+ * fim — que é quando um rodapé faz sentido. Barra fixa no pé da janela comeria
+ * altura de tela em toda página para dizer uma linha. */
+/* ⚠️ O RODAPÉ ATRAVESSA A TELA INTEIRA, como a barra do topo.
+ *
+ * A primeira versão descontava só `--s-5` — o padding MÍNIMO. Numa tela de
+ * 1920, onde a folga lateral chega a 276px, ele ficava encolhido no meio com
+ * dois vãos enormes dos lados: parecia um cartão perdido, e não o pé da página.
+ *
+ * Agora a margem negativa usa a MESMA folga do conteúdo, seja ela qual for. O
+ * texto continua limitado à coluna de leitura por dentro: a faixa é larga, a
+ * linha não. */
+/* Ele atravessa a tela inteira, como a barra do topo: a faixa é larga, e o
+ * texto por dentro continua limitado à coluna de leitura. */
+.app-rodape {
+  padding: var(--s-4) var(--folga-lateral);
+  border-top: 1px solid var(--linha);
+  background: var(--cor-rodape);
+  color: var(--cor-texto-fraco);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  text-align: center;
+}
+.menu-grupo {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--cor-texto-fraco);
+  margin: 18px 0 6px;
+  padding: 0 8px;
+  font-weight: 700;
+}
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--raio-sm);
+  cursor: pointer;
+  text-decoration: none;
+  color: var(--cor-texto);
+  font-weight: 500;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    box-shadow 0.15s;
+}
+.menu-item:hover {
+  background: var(--cor-hover);
+}
+.menu-item.ativo {
+  background: var(--grad-principal);
+  color: #fff;
+  box-shadow: var(--sombra-forte);
+}
+.menu-item {
+  justify-content: space-between;
+}
+.menu-item.ativo-pai {
+  color: var(--cor-principal);
+  font-weight: 700;
+}
+.menu-rotulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.menu-seta {
+  font-size: 11px;
+  opacity: 0.55;
+  transition: transform 0.18s;
+}
+.menu-item.aberto .menu-seta {
+  transform: rotate(90deg);
+}
+/* O ícone herda a cor do texto, então acende junto com o item ativo. */
+.icone {
+  flex: none;
+}
+/* Gaveta das ferramentas: fechada por padrão, abre no módulo em que você está. */
+.menu-sub {
+  display: none;
+}
+.menu-sub.aberta {
+  display: block;
+}
+.menu-secao {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--cor-texto-fraco);
+  opacity: 0.75;
+  font-weight: 700;
+  margin: 14px 0 5px;
+  padding-left: 32px;
+}
+.menu-subitem {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 12px 7px 14px;
+  margin-left: 14px;
+  border-left: 2px solid var(--cor-borda);
+  border-radius: 0 var(--raio-sm) var(--raio-sm) 0;
+  text-decoration: none;
+  color: var(--cor-texto-fraco);
+  font-size: 13.5px;
+  font-weight: 500;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+.menu-subitem:hover {
+  background: var(--cor-hover);
+  color: var(--cor-texto);
+}
+.menu-subitem.ativo {
+  background: var(--cor-superficie-2);
+  color: var(--cor-principal);
+  border-left-color: var(--cor-principal);
+  font-weight: 700;
+}
+
+/* Quem está logado, no pé da barra.
+ *
+ * `margin-top: auto` empurra para baixo: se a lista de ferramentas for curta,
+ * ele cola no fim da barra; se for longa, fica logo depois dela. Nos dois casos
+ * é o último elemento, e nunca disputa espaço com o menu.
+ */
+.app-usuario {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--cor-borda);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex: none;
+}
+.app-usuario-nome {
+  font-size: 13px;
+  color: var(--cor-texto-fraco);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.app-sair {
+  font-size: 13px;
+  color: var(--cor-principal);
+  text-decoration: none;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: var(--raio-sm);
+  flex: none;
+}
+.app-sair:hover {
+  background: var(--cor-hover);
+}
+
+/* ---- O topo e o pé da barra lateral ---- */
+
+/* O nome do produto, no lugar onde a marca de uma área de membros é procurada:
+ * canto superior esquerdo, acima da navegação. Quando a identidade visual
+ * entrar, a imagem do cliente ocupa este mesmo espaço. */
+.app-logo {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  text-decoration: none;
+  padding: 6px 12px 16px;
+  margin-bottom: 4px;
+  flex: none;
+}
+/* A SEGUNDA PARTE DO LOGO tem cor e fonte próprias, e cai nos mesmos padrões da
+ * primeira quando não tem. O espaço entre as duas é do `gap` do container — pôr
+ * um espaço no texto deixaria a escolha de espaçamento nas mãos de quem digita. */
+/* `strong.app-logo-2` e não só `.app-logo-2`: a regra da primeira parte é
+ * `.app-logo strong`, que tem mais peso que uma classe sozinha e ganhava dela.
+ * Com a tag junto, esta ganha em qualquer ordem do arquivo — e não depende de
+ * quem foi escrito por último. */
+.app-logo strong.app-logo-2,
+.app-header strong.app-logo-2,
+.entrada-marca strong.app-logo-2 {
+  font-family: var(--fonte-logo-2, var(--fonte-logo, var(--fonte-titulo, var(--fonte))));
+  background: var(--cor-logo-2, var(--cor-logo, var(--grad-principal)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.app-logo strong {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  line-height: 1.25;
+  font-family: var(--fonte-logo, var(--fonte-titulo, var(--fonte)));
+  background: var(--cor-logo, var(--grad-principal));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.app-logo:active {
+  opacity: 0.7;
+}
+/* Quando há logo enviado, ele substitui o texto — no topo da barra e na faixa
+ * do celular. Teto de altura para logo alto não empurrar o menu para baixo. */
+.app-logo-img {
+  max-width: 100%;
+  max-height: 44px;
+  object-fit: contain;
+  display: block;
+}
+.app-marca .app-logo-img {
+  max-height: 30px;
+}
+
+/* No desktop a marca do cabeçalho não existe: quem mostra o nome é o logo do
+ * topo da barra. Mostrar os dois seria dizer a mesma coisa duas vezes, lado a
+ * lado. No celular é o inverso, e o @media desfaz este par. */
+.app-marca {
+  display: none;
+}
+
+/* ---- O sino ---- */
+/* ⚠️ COR CHEIA, E NÃO A FRACA. Estes dois ícones são desenhados a traço fino
+ * sobre a faixa quase branca: com a cor de texto secundário, a silhueta some e
+ * eles parecem desligados — que é o contrário do que um sino de aviso precisa
+ * parecer. */
+.app-sino {
+  margin-left: auto;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--raio-sm);
+  color: var(--cor-texto);
+  text-decoration: none;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+/* ⚠️ O HOVER É UM VÉU DA COR DE DESTAQUE, e não `--cor-hover`.
+ *
+ * No tema claro, `--cor-hover` é a cor de superfície — quase branca. Sobre uma
+ * faixa que também é quase branca, ela não vira estado: vira um retângulo
+ * branco que ENGOLE o ícone, e o botão parece ter apagado ao ser tocado.
+ *
+ * Um véu do destaque a 12% funciona nos dois temas pelo mesmo motivo: ele é a
+ * cor da marca, e nenhum tema a escolheu igual ao próprio fundo. */
+.app-sino:hover,
+.app-sanduiche:hover {
+  background: color-mix(in srgb, var(--cor-principal) 12%, transparent);
+  color: var(--cor-principal);
+}
+/* O ponto é vermelho e PARADO. Sem `animation` aqui, de propósito: bolinha que
+ * pisca sem parar vira papel de parede, e mantém o navegador desenhando à toa. */
+.app-sino-ponto {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--cor-erro, #e5484d);
+  box-shadow: 0 0 0 2px var(--cor-fundo);
+}
+.app-sino-ponto[hidden] {
+  display: none;
+}
+
+/* Cada grupo do menu é um bloco. O bloco do rodapé é empurrado para o pé da
+ * barra — é assim que "Meu Perfil / Notificações / Suporte" se separam da
+ * navegação sem precisar de um título entre eles. */
+.menu-bloco {
+  display: flex;
+  flex-direction: column;
+}
+.menu-bloco--rodape {
+  margin-top: auto;
+}
+/* Com o bloco do rodapé presente, o espaço livre já foi gasto por ele. Se a
+ * fileira de quem está logado também pedisse `auto`, os dois dividiriam a
+ * sobra e apareceria um vão no meio do rodapé. */
+.app-sidebar:has(.menu-bloco--rodape) .app-usuario {
+  margin-top: 12px;
+}
+
+/* "sair" ganhou ícone e passou a ser desenhado como os itens do menu. */
+.app-sair {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* O véu NÃO EXISTE no desktop.
+ *
+ * `display: none` de verdade, não só invisível: ele é filho da grade do shell e
+ * vem antes do conteúdo no HTML. Sem isto ele ocupa a célula da direita e
+ * empurra o conteúdo para a linha de baixo — embaixo do menu. Foi o que
+ * aconteceu: invisível não basta, tem que sair da grade.
+ */
+.app-veu {
+  display: none;
+}
+
+/* O sanduíche só existe no celular. */
+.app-sanduiche {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  margin-left: -6px;
+  background: none;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  /* Cor da marca, não do texto: o botão é identidade, não conteúdo. */
+  cursor: pointer;
+  color: var(--cor-principal);
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.app-sanduiche:hover {
+  border-color: var(--cor-principal);
+}
+.app-sanduiche .icone {
+  pointer-events: none;
+}
+
+/* ---------- Celular e tablet ----------
+ *
+ * A lateral tinha 248px fixos e o CSS não tinha NENHUMA regra para tela
+ * pequena. Num aparelho de 375px sobravam 127px de conteúdo — cartão com uma
+ * palavra por linha. Não foi um ajuste que quebrou: nunca existiu.
+ *
+ * O corte é 1024px, a medida de mercado que separa tablet de desktop (o `lg`
+ * do Tailwind e do Bootstrap). Não é um número escolhido para uma tela
+ * específica: abaixo disso a lateral de 248px come um quarto da largura, que é
+ * demais para um painel cheio de conteúdo.
+ *
+ * Abaixo do corte a lateral sai do fluxo e vira gaveta, chamada pelo sanduíche.
+ */
+@media (max-width: 1023.98px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .app-sidebar {
+    position: fixed;
+    top: 60px;
+    bottom: 0;
+    left: 0;
+    width: 82vw;
+    max-width: 300px;
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    box-shadow: var(--sombra-forte);
+  }
+  .app-sidebar.aberta {
+    transform: none;
+  }
+
+  /* O véu escurece o resto e serve de área de fechar. */
+  .app-veu {
+    display: block;
+    position: fixed;
+    inset: 60px 0 0 0;
+    background: rgba(15, 17, 34, 0.45);
+    z-index: 30;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s;
+  }
+  .app-veu.aberta {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .app-sanduiche {
+    display: inline-flex;
+  }
+  /* ⚠️ MUDA A VARIÁVEL, e não a linha da grade. A altura da faixa entra na
+   * conta de quatro lugares — respiro do conteúdo, subida do hero, ponto de
+   * virada da rolagem. Trocar só a grade deixaria os outros três com 52px e
+   * 8px de conteúdo dormindo debaixo do cabeçalho. */
+  .app-shell {
+    --altura-topo: 60px;
+  }
+  /* A faixa atravessa a tela: aqui ela leva sanduíche, marca e sino. */
+  /* ⚠️ 14px À DIREITA, e não 8px. O cabeçalho passou a flutuar POR CIMA da
+   * área que rola — então a barra de rolagem dela corre por baixo dele, colada
+   * na borda. Com 8px, a pastilha de 38px do sino invadia essa faixa e o
+   * arredondado do estado de toque montava em cima da barra. */
+  .app-header {
+    grid-column: 1 / -1;
+    padding: 0 14px 0 12px;
+    gap: 10px;
+  }
+  /* Uma coluna só: o conteúdo acompanha, e continua ocupando as duas linhas
+   * para o hero poder passar por baixo da faixa aqui também. */
+  .app-content {
+    grid-column: 1 / -1;
+  }
+  /* O par se inverte: a marca aparece na faixa, e o logo da gaveta some.
+   * Repetir o nome dentro da gaveta empurraria o menu para baixo sem
+   * dizer nada de novo. */
+  .app-marca {
+    display: inline-flex;
+  }
+  .app-logo {
+    display: none;
+  }
+  /* No celular a folga é mais apertada: 24px de cada lado numa tela de 360
+   * comeria um sétimo da largura. Uma variável só — a grade e o respiro interno
+   * do hero saem dela, então não há como as duas discordarem. */
+  .app-miolo {
+    --folga-miolo: 14px;
+    padding: 16px 0;
+  }
+  .app-rodape {
+    padding: 14px;
+  }
+
+  /* Modal quase da tela toda: 640px num celular vira 90% com margem inútil. */
+  .modal {
+    width: 94%;
+    max-height: 90vh;
+    padding: 18px 16px;
+  }
+
+  /* Tabela larga rola dentro de si, em vez de esticar a página inteira. */
+  .tabela {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+/* ---- O painel de avisos, embaixo do sino ---- */
+/* Aviso é coisa de olhar em pé: a pessoa quer saber se tem recado, não navegar
+ * até uma página para descobrir que não tem. */
+.app-sino {
+  position: relative;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+}
+.app-avisos {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(340px, 90vw);
+  background: var(--cor-fundo);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  box-shadow: 0 14px 40px rgba(15, 17, 34, 0.18);
+  z-index: 60;
+  overflow: hidden;
+  text-align: left;
+  cursor: default;
+}
+.app-avisos[hidden] {
+  display: none;
+}
+.app-avisos-topo {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--cor-borda);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--cor-texto-fraco);
+}
+/* Sete cabem sem rolagem na maioria das telas; o teto existe para o dia em que
+ * um aviso tiver texto de apoio longo. */
+.app-avisos-lista {
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+}
+.app-aviso {
+  display: block;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--cor-borda);
+  text-decoration: none;
+  color: inherit;
+}
+.app-aviso:last-child {
+  border-bottom: 0;
+}
+a.app-aviso:hover {
+  background: var(--cor-hover);
+}
+/* O que ainda não foi visto ganha uma marca à esquerda — some sozinha na
+ * próxima abertura, porque abrir já conta como ler. */
+.app-aviso--novo {
+  box-shadow: inset 3px 0 0 var(--cor-principal);
+  background: var(--cor-superficie);
+}
+.app-aviso-titulo {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+/* O bloco "Para você" repete o cabeçalho no meio da lista — o segundo título
+ * precisa de um respiro em cima, senão os dois blocos parecem um só. */
+.app-avisos-topo + .app-aviso {
+  border-top: 0;
+}
+.app-aviso + .app-avisos-topo {
+  border-top: 1px solid var(--cor-borda);
+}
+/* O recado pessoal se distingue pela cor da marca, e não por um ícone: o
+ * painel tem sete linhas, e sete ícones repetidos viram textura. */
+.app-aviso--pessoal .app-aviso-titulo {
+  color: var(--cor-principal);
+}
+.app-aviso-corpo {
+  font-size: 12.5px;
+  color: var(--cor-texto-fraco);
+  line-height: 1.5;
+  margin: 4px 0 0;
+}
+.app-avisos-vazio {
+  padding: 18px 14px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--cor-texto-fraco);
+  text-align: center;
+}
+
+/* ===========================================================================
+ * A BARRA RECOLHIDA — só no desktop
+ * ===========================================================================
+ *
+ * A casca já era uma grade de duas colunas. Recolher é trocar a primeira por
+ * 64px: o cabeçalho, o conteúdo e o rodapé se reposicionam sozinhos, porque
+ * todos já dependem da grade. É por isso que isto é quase todo CSS.
+ *
+ * ⚠️ TUDO AQUI DENTRO DE `min-width: 1025px`. Abaixo disso a barra já é gaveta,
+ * com sanduíche e véu — recolher uma gaveta não significa nada, e a classe
+ * solta no celular deixaria a gaveta aberta com 64px de largura. */
+
+/* O topo da barra: marca à esquerda, botão à direita. */
+/* O topo da barra guarda as DUAS versoes da marca — a inteira e a compacta —
+ * e mostra uma de cada vez. O botao de recolher nao mora aqui: ele fica na
+ * borda da barra, pendurado na casca. */
+.app-barra-topo {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px 16px;
+  margin-bottom: 4px;
+  flex: none;
+}
+/* O `.app-logo` já traz o próprio padding — dentro da linha ele viraria recuo
+ * dobrado, e a marca desencostaria da borda que o resto do menu respeita. */
+.app-barra-topo .app-logo {
+  padding: 0;
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+/* A marca compacta existe sempre no HTML e some por CSS. Montá-la só na hora
+ * de recolher faria a troca de largura piscar e, com logo em imagem, baixar o
+ * arquivo de novo. */
+.app-logo-compacto {
+  display: none;
+  text-decoration: none;
+}
+.app-logo-compacto strong {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  font-family: var(--fonte-logo, var(--fonte-titulo, var(--fonte)));
+  background: var(--cor-logo, var(--grad-principal));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.app-logo-icone {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  display: block;
+  border-radius: var(--raio-xs);
+}
+
+/* O BOTAO DE RECOLHER: uma pastilha COLADA NA BORDA da barra.
+ *
+ * Metade dele fica sobre a barra, metade sobre o conteudo — em cima da linha
+ * que separa os dois. E onde o olho ja entende que mora um controle de
+ * largura, e e o que essa forma comunica sem nenhuma palavra.
+ *
+ * ⚠️ O LUGAR NAO MUDA AO RECOLHER; so a seta vira. A referencia e a borda, e a
+ * borda existe nas duas larguras. Botao que anda de canto obriga o olho a
+ * procurar de novo a cada clique — e este e um botao que se usa varias vezes
+ * ao dia.
+ *
+ * `top: 62px` = logo abaixo da faixa de 52px. Ali ele nao disputa espaco com o
+ * sino nem com a marca, e cai na altura do primeiro item do menu — que e para
+ * onde a pessoa ja esta olhando.
+ *
+ * Fundo SOLIDO, e nao transparente: ele flutua sobre a borda e sobre o
+ * conteudo, e translucido deixaria a linha divisoria atravessa-lo. */
+.app-recolher {
+  display: none;
+  position: absolute;
+  top: 62px;
+  left: 248px;
+  transform: translateX(-50%);
+  /* Acima da faixa do topo (z-index 20) e do conteudo: ele e o unico elemento
+   * que existe DE PROPOSITO em cima da divisa. */
+  z-index: 25;
+
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  background: var(--cor-fundo);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-redondo);
+  box-shadow: var(--sombra);
+  cursor: pointer;
+  color: var(--cor-texto-fraco);
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
+}
+
+/* A PASTILHA SE APAGA ATE SER PROCURADA.
+ *
+ * Ela vive em cima da divisa, na frente do conteudo — chamar atencao o dia
+ * inteiro seria uma mancha permanente na tela por uma acao que se faz uma vez
+ * por sessao. Some quase por completo, e acende inteira quando o mouse chega
+ * perto da borda ou quando o teclado a alcanca. */
+.app-recolher {
+  opacity: 0.45;
+}
+.app-shell:hover .app-recolher {
+  opacity: 1;
+}
+/* ⚠️ O TOM DO HOVER E PINTADO POR CIMA DE UM FUNDO SOLIDO, e nao no lugar dele.
+ *
+ * No tema escuro `--cor-hover` e TRANSLUCIDO de proposito
+ * (`color-mix(... 22%, transparent)`) — o que e certo para elemento apoiado
+ * sobre fundo opaco, e errado para este, que flutua EM CIMA DA LINHA
+ * divisoria. Usado como `background` simples, o hover deixava a borda da barra
+ * atravessar o botao.
+ *
+ * A cor solida vai em `background-color`, e o tom em `background-image` como
+ * um degrade de uma cor so. As duas camadas empilham: o tom aparece, a linha
+ * nao. E `--cor-hover` continua sendo o token — quem trocar o acento da marca
+ * continua ganhando o hover na cor dele.
+ *
+ * (`--cor-superficie` esta fora de questao: no escuro ela e quase o fundo, e o
+ * botao pareceria nao responder ao mouse. Ha um teste varrendo a folha atras
+ * disso — ele ja pegou este erro aqui uma vez.) */
+.app-recolher:hover {
+  opacity: 1;
+  color: var(--cor-principal);
+  border-color: var(--cor-principal);
+  background-color: var(--cor-fundo);
+  background-image: linear-gradient(var(--cor-hover), var(--cor-hover));
+}
+/* Teclado enxerga o que o mouse enxerga: sem isto a pastilha recebia foco
+ * estando quase invisivel, e ninguem via onde estava. */
+.app-recolher:focus-visible {
+  opacity: 1;
+}
+.app-recolher .icone {
+  pointer-events: none;
+}
+
+@media (min-width: 1025px) {
+  /* O botão só existe onde ele significa alguma coisa. */
+  .app-recolher {
+    display: inline-flex;
+  }
+
+  .app-shell--recolhida {
+    grid-template-columns: 64px 1fr;
+  }
+  /* O botao acompanha a borda, porque e nela que ele mora. Para o olho o
+   * lugar continua o mesmo: "na divisa, no alto". */
+  .app-shell--recolhida .app-recolher {
+    left: 64px;
+  }
+
+  /* A barra fica estreita e tudo dentro dela se centraliza. */
+  .app-shell--recolhida .app-sidebar {
+    padding: 14px 8px;
+    overflow-x: hidden;
+  }
+
+  .app-shell--recolhida .app-barra-topo {
+    flex-direction: column;
+    gap: var(--s-2);
+    padding: 6px 0 16px;
+  }
+  .app-shell--recolhida .app-logo {
+    display: none;
+  }
+  .app-shell--recolhida .app-logo-compacto {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+  }
+
+  /* ⚠️ O NOME SOME, O ÍCONE FICA. É por isto que o nome precisou ganhar
+   * elemento próprio em `base/sidebar.js`: enquanto ele era texto solto ao
+   * lado do ícone, esconder um levava o outro junto. */
+  .app-shell--recolhida .menu-nome {
+    display: none;
+  }
+
+  .app-shell--recolhida .menu-item,
+  .app-shell--recolhida .app-sair {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .app-shell--recolhida .menu-rotulo {
+    justify-content: center;
+    gap: 0;
+  }
+
+  /* Título de grupo vira um traço: some a palavra, fica a separação — que é a
+   * única coisa que ele fazia de útil numa barra de 64px. */
+  .app-shell--recolhida .menu-grupo {
+    font-size: 0;
+    height: 1px;
+    padding: 0;
+    margin: var(--s-3) auto;
+    width: 24px;
+    background: var(--cor-borda);
+  }
+
+  /* O pé da barra: o nome de quem está logado sai, o "sair" fica como ícone. */
+  .app-shell--recolhida .app-usuario-nome {
+    display: none;
+  }
+  .app-shell--recolhida .app-usuario {
+    justify-content: center;
+  }
+  .app-shell--recolhida .app-sair {
+    font-size: 0;
+    gap: 0;
+  }
+  .app-shell--recolhida .app-sair .icone {
+    font-size: initial;
+  }
+
+  /* A faixa de vencimento continua legível: ela é do conteúdo, não da barra. */
+}
+
+/* Sem transição de largura: a grade animando empurra o conteúdo inteiro, e
+ * numa tela cheia de cartões isso é meio segundo de tremor por um efeito que
+ * ninguém pediu. A troca é seca, e é melhor assim. */
+@media (prefers-reduced-motion: reduce) {
+  .app-recolher {
+    transition: none;
+  }
+}
+
+/* ===========================================================================
+ * O HERO POR BAIXO DA FAIXA DO TOPO — só na Página Inicial
+ * ===========================================================================
+ *
+ * A imagem sangrava para os lados e parava numa linha reta embaixo do
+ * cabeçalho: terminava do nada, e meia sangria parece defeito.
+ *
+ * Aqui ela sobe por baixo da faixa, que fica transparente enquanto a imagem
+ * estiver atrás dela.
+ *
+ * ⚠️ SÓ VALE COM O HERO "DE PONTA A PONTA" E COM IMAGEM DE VERDADE. Sem
+ * imagem, o hero é o gradiente da marca — e gradiente escapando por baixo do
+ * cabeçalho não parece premium, parece cor vazada. Quem decide é
+ * `base/hero-topo.js`, que só põe o atributo quando as duas coisas valem. */
+
+.app-shell[data-hero-topo='sim'] .app-header {
+  background-color: transparent;
+  backdrop-filter: none;
+  border-bottom-color: transparent;
+}
+
+/* O VÉU NA FAIXA, e não confiar na sorte da imagem.
+ *
+ * O sino e a marca do celular ficam por cima de uma foto escolhida pelo
+ * cliente, e ninguém garante que ela seja escura no topo. Sem este degradê,
+ * metade das imagens possíveis deixa os ícones invisíveis — e o dono descobre
+ * pelo aluno. É o mesmo raciocínio do véu que o próprio hero já usa por baixo
+ * da frase. */
+.app-shell[data-hero-topo='sim'] .app-header::before {
+  content: '';
+  position: absolute;
+  /* ⚠️ PASSA DO FIM DA FAIXA DE PROPÓSITO (`bottom: -40px`).
+   *
+   * Parado na borda do cabeçalho, o degradê termina numa linha reta no meio da
+   * imagem — troca um corte por outro. Descendo além dela, ele acaba onde
+   * ninguém percebe, e é isso que faz o topo parecer parte da foto em vez de
+   * uma tarja por cima dela. */
+  inset: 0 0 -40px 0;
+  /* Três paradas, e não duas: o degradê linear puro clareia rápido demais e a
+   * escuridão some antes de chegar ao pé dos ícones. */
+  background: linear-gradient(
+    180deg,
+    rgba(12, 14, 28, 0.82) 0%,
+    rgba(12, 14, 28, 0.62) 38%,
+    rgba(12, 14, 28, 0.28) 72%,
+    rgba(12, 14, 28, 0) 100%
+  );
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Sobre a imagem, os ícones são claros — como a frase do hero, pelo mesmo
+ * motivo e com o mesmo véu por baixo. */
+.app-shell[data-hero-topo='sim'] .app-header .app-sino,
+.app-shell[data-hero-topo='sim'] .app-header .app-sanduiche {
+  color: #fff;
+}
+
+/* ⚠️ E O NOME DA MARCA É UM ÍCONE COMO OS OUTROS — foi o que faltou na
+ * primeira versão.
+ *
+ * No celular a marca aparece na faixa (no desktop ela mora na barra lateral), e
+ * ela é desenhada com o GRADIENTE DA MARCA recortado no texto. Sobre um fundo
+ * claro isso é bonito; sobre a foto do hero, é a cor do cliente competindo com
+ * a foto do cliente — e quem perde é a leitura do nome do produto, na tela mais
+ * importante, no aparelho em que a maioria entra.
+ *
+ * Aqui ele vira branco chapado com sombra, igual à frase do hero. E volta ao
+ * gradiente assim que a faixa recupera o fundo. */
+.app-shell[data-hero-topo='sim'] .app-header strong {
+  background: none;
+  -webkit-text-fill-color: #fff;
+  color: #fff;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
+}
+/* Logo por imagem: não dá para pintar de branco, então ganha contorno de
+ * sombra — que é o que separa uma logo clara de um céu claro. */
+.app-shell[data-hero-topo='sim'] .app-header .app-logo-img {
+  filter: drop-shadow(0 1px 6px rgba(0, 0, 0, 0.5));
+}
+
+/* ⚠️ E A FAIXA VOLTA AO NORMAL ASSIM QUE A IMAGEM SAI DE TRÁS DELA.
+ *
+ * Transparente sobre a imagem é bonito. Sobre o TEXTO do conteúdo — que é o que
+ * sobe quando a página rola — vira letra por cima de letra, e não há cor de
+ * ícone que resolva. Legibilidade ganha de efeito, sempre. */
+.app-shell[data-hero-topo='sim'][data-topo-rolou='sim'] .app-header {
+  background-color: color-mix(in srgb, var(--cor-topo) 84%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom-color: var(--cor-borda);
+}
+.app-shell[data-hero-topo='sim'][data-topo-rolou='sim'] .app-header::before {
+  opacity: 0;
+}
+.app-shell[data-hero-topo='sim'][data-topo-rolou='sim'] .app-header .app-sino,
+.app-shell[data-hero-topo='sim'][data-topo-rolou='sim'] .app-header .app-sanduiche {
+  color: var(--cor-principal);
+}
+.app-shell[data-hero-topo='sim'][data-topo-rolou='sim'] .app-header strong {
+  background: var(--cor-logo, var(--grad-principal));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+}
+.app-shell[data-hero-topo='sim'][data-topo-rolou='sim'] .app-header .app-logo-img {
+  filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-header {
+    transition: none;
+  }
+}

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Carregando…</title>
+    <!-- Ícone da aba. TROQUE estes arquivos pela marca do produto: favicon.svg,
+       favicon.ico, favicon-16/32.png e apple-touch-icon.png.
+       E SUBA O `?v=` AO TROCAR. Navegador guarda favicon com teimosia extra —
+       ele sobrevive a recarga forçada e ignora o cabeçalho de cache. Sem mudar
+       o endereço, um ícone novo pode levar dias para aparecer, e a conclusão de
+       quem olha é "não subiu", não "está guardado". -->
+    <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png?v=2" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
+    <meta name="theme-color" content="#4f46e5" />
+    <!-- A casca é uma tela vazia até o login: nada aqui serve a um buscador, e um
+       endereço de aula indexado é um convite a tentar abri-lo sem pagar. -->
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="stylesheet" href="styles/tokens.css" />
+    <link rel="stylesheet" href="styles/base.css" />
+    <link rel="stylesheet" href="styles/components.css" />
+    <!-- Estilos dos modulos. Vazio na Base; o montador preenche. -->
+    <link rel="stylesheet" href="styles/modulos.css" />
+  </head>
+  <body>
+    <!-- O atalho do teclado. Primeiro elemento do corpo de propósito: ele só
+       serve se for a primeira parada do Tab. -->
+    <a class="pular-para-conteudo" href="#content">Pular para o conteúdo</a>
+    <!-- O que aparece ANTES do sistema iniciar, enquanto o Google confere o
+       login. É outro "Carregando…" que o das trocas de tela, e por muito tempo
+       foi texto solto no canto de cima à esquerda. -->
+    <div id="app"><div class="carregando-tela">Carregando…</div></div>
+    <script type="module" src="base/app.js"></script>
+  </body>
+</html>

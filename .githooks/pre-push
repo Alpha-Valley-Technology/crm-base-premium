@@ -1,0 +1,41 @@
+#!/bin/sh
+# A SUÍTE RÁPIDA ANTES DE O CÓDIGO SAIR DA MÁQUINA.
+#
+# Ligado por: git config core.hooksPath .githooks
+# Para pular num caso legítimo: git push --no-verify
+#
+# ---------------------------------------------------------------------------
+# POR QUE AQUI, E NÃO NO `pre-commit`
+# ---------------------------------------------------------------------------
+#
+# Commit é rascunho: a pessoa salva o meio do caminho, e é bom que salve. Um
+# commit que leva sete segundos para acontecer ensina a commitar menos, e
+# commit grande é pior para todo mundo do que um teste que roda um pouco
+# depois.
+#
+# Push é a hora em que o trabalho deixa de ser só seu.
+#
+# ---------------------------------------------------------------------------
+# ⚠️ ISTO NÃO É O QUE PROTEGE A PRODUÇÃO
+# ---------------------------------------------------------------------------
+#
+# Em 04/09/2026 o login quebrou em produção por cinco dias, e nenhum hook de
+# git teria impedido: o código foi ao ar por `firebase deploy`, e não estava
+# commitado. A porta de produção é o `predeploy` no `firebase.json` — este
+# hook cuida do repositório, aquele cuida do site. Os dois precisam existir,
+# e nenhum substitui o outro.
+
+echo "→ suíte de tela (jsdom) antes do push…"
+if ! npm run --silent test:unit >/dev/null 2>&1; then
+  echo ""
+  echo "PUSH BARRADO — a suíte de tela reprovou."
+  echo ""
+  npm run --silent test:unit 2>&1 | grep -E "^✖|not ok|AssertionError|importa '" | head -20
+  echo ""
+  echo "Rode 'npm run test:unit' para ver o relatório inteiro."
+  echo "Se for alarme falso: git push --no-verify"
+  echo ""
+  exit 1
+fi
+
+echo "  ok."

@@ -1,0 +1,890 @@
+/* Estilos dos módulos deste produto.
+ *
+ * VAZIO NA BASE, de propósito. O montador junta aqui o `estilo.css` de cada
+ * módulo declarado em modulo.json.
+ *
+ * Existe porque estilo de módulo estava morando em components.css — a carcaça
+ * carregava regra de `.kanban` sem saber o que é um quadro de conteúdos. Mesmo
+ * problema de um helper de módulo largado nas regras do banco: a Base vira
+ * gaveta, e o próximo produto nasce carregando peso que não usa.
+ *
+ * NÃO edite este arquivo à mão: o montador reescreve.
+ */
+
+/* ---- Painel de conteúdo: montar o catálogo ---- */
+.conteudo-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+/* O recuo é o que diz "esta aula é deste módulo". Sem ele a árvore vira lista. */
+
+.btn--mini {
+  padding: 4px 9px;
+  font-size: 12px;
+}
+
+.conteudo-editor-acoes {
+  display: flex;
+  gap: 8px;
+}
+.input--area {
+  min-height: 96px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+/* ---- Campo de imagem: enviar arquivo ou colar link ---- */
+/* O <fieldset> nativo desenha a própria moldura com um talho para a legenda —
+ * um traço de 1996 no meio de um painel de 2026. A moldura vira um painel
+ * comum, e a legenda vira um rótulo igual ao dos outros campos: o campo de
+ * imagem passa a parecer parte do formulário, e não um enxerto. */
+.campo-imagem {
+  border: 1px solid var(--linha);
+  border-radius: var(--raio-sm);
+  padding: var(--s-3) var(--s-4) var(--s-4);
+  margin: var(--s-1) 0 var(--s-4);
+  background: var(--cor-superficie);
+}
+.campo-imagem legend {
+  float: left;
+  width: 100%;
+  padding: 0;
+  margin-bottom: 2px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--cor-texto);
+}
+.campo-imagem legend + * {
+  clear: both;
+}
+.campo-imagem-dica {
+  font-size: 12.5px;
+  color: var(--cor-texto-fraco);
+  line-height: 1.5;
+  margin: 0 0 10px;
+}
+/* A prévia tem teto de altura: sem ele, uma capa 1920×1080 empurra os campos
+ * para fora da tela e a pessoa não acha o botão de salvar. */
+.campo-imagem-previa {
+  display: block;
+  max-width: 100%;
+  max-height: 150px;
+  border-radius: var(--raio-xs);
+  border: 1px solid var(--linha);
+  margin-bottom: var(--s-3);
+  object-fit: cover;
+  background: var(--cor-fundo);
+}
+.campo-imagem-linha {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  font-size: 0.78rem;
+  color: var(--cor-texto-fraco);
+  margin-bottom: var(--s-3);
+}
+.campo-imagem-linha input[type='file'] {
+  font-size: 12.5px;
+}
+
+/* ---- Painel de identidade ---- */
+.ident-bloco {
+  max-width: 640px;
+  margin-bottom: 30px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--cor-borda);
+}
+.ident-bloco:last-of-type {
+  border-bottom: 0;
+}
+.ident-bloco h3 {
+  font-size: 15px;
+  margin: 0 0 4px;
+}
+.ident-explica {
+  color: var(--cor-texto-fraco);
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 0 0 16px;
+}
+/* O seletor nativo e o código hexadecimal são a MESMA escolha em duas formas:
+ * quem tem o código da marca cola, quem não tem escolhe no olho. */
+.campo-cor {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.campo-cor input[type='color'] {
+  width: 52px;
+  height: 40px;
+  padding: 2px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  background: none;
+  cursor: pointer;
+  flex: none;
+}
+.campo-cor .input {
+  max-width: 160px;
+}
+
+/* ===========================================================================
+   A PÁGINA INICIAL — estrutura. A estética vem depois.
+   =========================================================================== */
+
+/* ---- Hero ---- */
+.hero {
+  display: flex;
+  align-items: flex-end;
+  min-height: 220px;
+  padding: 28px;
+  border-radius: var(--raio);
+  margin-bottom: 34px;
+  background: var(--grad-principal);
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ---- HERO DE PONTA A PONTA (opção de Identidade) ----
+ *
+ * A folga lateral do conteúdo é uma VARIÁVEL (`--folga-lateral`, em
+ * `.app-content`), e é ela que torna isto barato: sangrar é margem negativa do
+ * tamanho exato da folga, seja qual for a largura da tela.
+ *
+ * Sem a variável seria preciso adivinhar o padding em cada faixa de tela — e a
+ * conta erraria em todas as que ninguém testou.
+ *
+ * O `100%` continua sendo o do PAI, então a largura precisa crescer o dobro da
+ * folga para cobrir os dois lados.
+ *
+ * Cantos retos e sem sombra: cartão sangrado com canto arredondado deixa quatro
+ * falhas brancas nas quinas, e é o detalhe que denuncia a gambiarra. */
+[data-hero='sangria'] .hero {
+  /* DE UMA EXTREMIDADE À OUTRA — da borda do menu lateral até a borda da
+   * página, exatamente como a faixa do topo.
+   *
+   * ⚠️ ISTO ERA MARGEM NEGATIVA, E ESTAVA ERRADO. A margem tinha o tamanho de
+   * `--folga-lateral`, e essa conta usa `100%` — que, DENTRO do hero, já era a
+   * coluna de leitura de 1120px, e não a área toda. O hero sangrava 24px por
+   * lado e parava em 1168px numa tela de 1920.
+   *
+   * A grade do miolo (em `base.css`) tem as duas bordas nomeadas. Pedir por
+   * nome não tem conta para errar. */
+  grid-column: sangria-inicio / sangria-fim;
+  border-radius: 0;
+  min-height: 300px;
+  /* O respiro interno devolve a folga: a faixa é larga, a frase continua
+   * alinhada com o resto da página. */
+  padding: 34px var(--folga-miolo);
+  /* Sobe até o topo do conteúdo. Sem o modo "por baixo da faixa", isso encosta
+   * na borda do cabeçalho; com ele, a imagem continua por baixo. */
+  margin-top: calc(-1 * var(--s-5));
+}
+
+/* ⚠️ COM O HERO POR BAIXO DA FAIXA, ele precisa subir TAMBÉM a altura dela — e
+ * devolver esse espaço como respiro interno, senão a frase nasce escondida
+ * atrás do sino. */
+.app-shell[data-hero-topo='sim'] .hero {
+  margin-top: calc(-1 * (var(--s-5) + var(--altura-topo)));
+  padding-top: calc(34px + var(--altura-topo));
+  min-height: calc(300px + var(--altura-topo));
+}
+
+/* ⚠️ A MESMA CONTA, COM OUTROS NÚMEROS — e ela precisa morar AQUI.
+ *
+ * No celular o miolo tem respiro próprio de 16px, e não `--folga-lateral`.
+ * Escrita em `base.css`, esta regra teria a mesma força da de cima e perderia
+ * a disputa só por carregar antes — o hero subiria a conta do desktop numa
+ * tela onde ela não vale. */
+@media (max-width: 1023.98px) {
+  [data-hero='sangria'] .hero {
+    margin-top: -16px;
+    padding: 24px var(--folga-miolo);
+    min-height: 220px;
+  }
+  .app-shell[data-hero-topo='sim'] .hero {
+    margin-top: calc(-1 * (16px + var(--altura-topo)));
+    padding-top: calc(24px + var(--altura-topo));
+    min-height: calc(220px + var(--altura-topo));
+  }
+}
+
+/* ---- Uma prateleira ---- */
+.secao {
+  margin-bottom: 38px;
+}
+.secao-titulo {
+  font-size: 19px;
+  margin: 0 0 14px;
+  font-family: var(--fonte-titulo, var(--fonte));
+}
+
+/* A borda nasce TRANSPARENTE, e não some no repouso: aparecer só no hover
+ * empurraria o card 1px para dentro a cada passada do mouse — um tremor que
+ * ninguém sabe nomear, mas todo mundo sente. */
+/* ⚠️ O ANEL DO HOVER FICA SÓ EM VOLTA DA IMAGEM, e nao em volta do card.
+ *
+ * Ele envolvia imagem E titulo, porque a borda morava no `<a>` que e o card
+ * inteiro. Isso fazia o conjunto ler como CAMPO DE FORMULARIO: uma caixa com
+ * uma imagem e um rotulo dentro. E encostava a moldura no texto — rente a
+ * esquerda e colada na linha de baixo.
+ *
+ * Com o anel so na capa, ela le como POSTER — o objeto clicavel — e o titulo
+ * vira LEGENDA, que e o que ele e. E o que Netflix, Prime, Steam e Spotify
+ * fazem, e nao por acaso: a capa e a coisa; o nome fala sobre a coisa.
+ *
+ * De quebra resolve o vao vazio quando a legenda nao aparece: nao existe caixa
+ * para ficar vazia.
+ *
+ * O CARD INTEIRO CONTINUA SUBINDO. Se so a imagem subisse, a legenda ficaria
+ * para tras e pareceria defeito. */
+.card-vitrine {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: transform var(--t-micro);
+}
+.card-vitrine:hover {
+  transform: translateY(-2px);
+}
+
+/* No claro, a sombra basta para a capa "subir". No ESCURO, sombra preta sobre
+ * fundo preto nao aparece — sem a borda de destaque, o card nao dava sinal
+ * nenhum de que estava sob o mouse. */
+.card-vitrine:hover .card-capa {
+  box-shadow: var(--sombra);
+  border-color: color-mix(in srgb, var(--cor-principal) 55%, transparent);
+}
+.card-vitrine--sem-destino:hover .card-capa {
+  box-shadow: none;
+  border-color: var(--cor-borda);
+}
+
+/* A PROPORÇÃO VEM DA IDENTIDADE, e não cravada aqui.
+ * `16 / 9` continua sendo o padrão — é o que vale quando ninguém escolheu, e o
+ * que a tela de entrada usa antes de a identidade chegar do banco. */
+.card-capa {
+  aspect-ratio: var(--card-proporcao, 16 / 9);
+  background: var(--cor-superficie-2);
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  overflow: hidden;
+  transition:
+    box-shadow var(--t-micro),
+    border-color var(--t-micro);
+}
+
+/* ---- Feed ---- */
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+/* ⚠️ O FEED REAGIA SÓ POR FUNDO, e no tema CLARO isso é quase nada.
+ *
+ * `--cor-hover` no claro é `--cor-superficie`: um quase-branco sobre outro
+ * quase-branco. O efeito existia no código e não existia na tela — o dono
+ * descreveu como "muito sem graça", e estava certo.
+ *
+ * É exatamente o raciocínio que já estava escrito para os cards e que ninguém
+ * aplicou aqui: fundo sozinho não basta. Quem dá o sinal é a BORDA (que
+ * aparece nos dois temas, porque muda de cor e não de claridade) e o TÍTULO
+ * ganhando a cor da marca — que é o sinal universal de "isto é um link".
+ *
+ * A sombra completa o movimento: é a mesma linguagem do card da vitrine, então
+ * o feed passa a reagir como o resto do produto em vez de ter um dialeto seu.
+ *
+ * SEM DESLOCAMENTO. O card sobe 2px porque está numa grade com ar em volta.
+ * Numa lista densa, cada linha pulando ao passar o mouse é tremor, não
+ * resposta — e a borda já existe em repouso, então nada empurra nada. */
+.feed-item {
+  display: block;
+  padding: 13px 14px;
+  border-radius: var(--raio-sm);
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid var(--cor-borda);
+  margin-bottom: 8px;
+  transition:
+    background var(--t-micro),
+    border-color var(--t-micro),
+    box-shadow var(--t-micro);
+}
+.feed-item:hover {
+  background: var(--cor-hover);
+  border-color: color-mix(in srgb, var(--cor-principal) 55%, transparent);
+  box-shadow: var(--sombra);
+}
+.feed-item:hover .feed-titulo {
+  color: var(--cor-principal);
+}
+
+/* Teclado enxerga o que o mouse enxerga. Sem isto, quem navega por Tab via o
+ * anel do foco e mais nada, enquanto quem usa mouse via a linha inteira
+ * responder. */
+.feed-item:focus-visible {
+  border-color: color-mix(in srgb, var(--cor-principal) 55%, transparent);
+}
+
+/* ---- Título de página (Cursos, Produtos Validados) ---- */
+.pagina-titulo {
+  font-size: 26px;
+  margin: 0 0 6px;
+  font-family: var(--fonte-titulo, var(--fonte));
+}
+.pagina-explica {
+  color: var(--cor-texto-fraco);
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0 0 30px;
+  max-width: 62ch;
+}
+
+/* O selo diz o que a pessoa está olhando ANTES de ela clicar: curso, ferramenta
+ * e solução vendem de jeitos diferentes. */
+.card-capa {
+  position: relative;
+}
+
+/* "Comece por aqui" é UM card e não pode esticar até a largura da tela: card de
+ * 1200px de largura não parece destaque, parece erro de layout. */
+.secao:has(.cards > :only-child) .cards {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 260px));
+}
+
+/* ===========================================================================
+   A PÁGINA DA AULA
+   =========================================================================== */
+
+/* O índice é uma coluna AQUI DENTRO, e não uma segunda barra lateral: duas
+ * barras foi o que descartamos do projeto anterior, e recriá-las por dentro
+ * seria o mesmo erro com outro nome. */
+.aula-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 26px;
+  align-items: start;
+}
+
+/* ⚠️ O `top` DESCONTA A FAIXA DO TOPO, e não é enfeite.
+ *
+ * O cabeçalho passou a flutuar POR CIMA do conteúdo — é o que deixa a imagem do
+ * hero correr por baixo dele. Para quem gruda, isso mudou o mundo: a régua do
+ * `sticky` é a área visível do container que rola, e ela agora COMEÇA embaixo
+ * do cabeçalho. Com `top: 12px`, o índice grudava 12px abaixo do topo da área —
+ * ou seja, atrás da faixa, com as primeiras aulas escondidas.
+ *
+ * A altura vem da mesma variável de sempre, então isto acompanha o celular
+ * (60px) sem uma segunda regra. */
+.aula-indice {
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  padding: 14px;
+  position: sticky;
+  top: calc(var(--altura-topo) + 12px);
+  max-height: calc(100vh - var(--altura-topo) - 40px);
+  overflow-y: auto;
+}
+.aula-indice-topo {
+  padding: 0 6px 10px;
+  border-bottom: 1px solid var(--cor-borda);
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+/* No celular o índice sai do fluxo e vira gaveta: 280px de coluna num aparelho
+ * de 390px não sobra vídeo. */
+@media (max-width: 900px) {
+  .aula-layout {
+    grid-template-columns: 1fr;
+  }
+  .aula-indice {
+    display: none;
+    position: static;
+    max-height: none;
+  }
+  .aula-layout--indice-aberto .aula-indice {
+    display: block;
+    margin-bottom: 18px;
+  }
+}
+
+/* ---- Continuar de onde parou ---- */
+.continuar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 20px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  text-decoration: none;
+  color: inherit;
+  background: var(--cor-fundo);
+  transition: box-shadow 0.15s;
+}
+.continuar:hover {
+  box-shadow: var(--sombra);
+}
+
+/* ---- Meu Perfil ---- */
+.perfil-conta {
+  color: var(--cor-texto-fraco);
+  font-size: 13px;
+  margin: -6px 0 16px;
+}
+
+/* ===========================================================================
+   O FÓRUM
+   =========================================================================== */
+.forum-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.forum-item {
+  display: block;
+  padding: 15px 17px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  text-decoration: none;
+  color: inherit;
+  transition:
+    box-shadow 0.15s,
+    border-color 0.15s;
+}
+.forum-item:hover {
+  box-shadow: var(--sombra);
+  border-color: var(--cor-principal);
+}
+.forum-item-titulo {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.forum-item-resumo {
+  color: var(--cor-texto-fraco);
+  font-size: 13.5px;
+  line-height: 1.5;
+  margin: 5px 0 0;
+}
+.forum-item-meta {
+  color: var(--cor-texto-fraco);
+  font-size: 12.5px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.forum-acoes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.forum-acoes .btn {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+.forum-editor {
+  max-width: 720px;
+}
+
+/* ---- Painel de avisos ---- */
+/* Quem publica precisa VER a linha de corte acontecendo, senão publica o oitavo
+ * achando que todo mundo vai ver. */
+.avisos-corte {
+  margin: 18px 0 10px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--cor-borda);
+  font-size: 12px;
+  color: var(--cor-texto-fraco);
+  text-align: center;
+}
+.avisos-fora {
+  opacity: 0.55;
+}
+
+/* ---- Configuração: a aba de Gamificação ---- */
+.gami-titulo {
+  font-size: 15px;
+  margin: 0 0 6px;
+}
+.gami-explica {
+  font-size: 13px;
+  color: var(--cor-texto-fraco);
+  line-height: 1.55;
+  margin: 8px 0 0;
+}
+/* O "Remover" se repete uma vez por degrau. Em tamanho cheio, cinco botões
+ * vermelhos viram a coisa mais chamativa de uma tela cuja função é escrever
+ * nomes e números — o perigo fica no tom, não no volume. */
+.gami-linha .btn--perigo {
+  padding: 5px 12px;
+  font-size: 12.5px;
+  background: transparent;
+  border: 1px solid currentColor;
+  color: var(--cor-erro, #c0392b);
+}
+.gami-linha .btn--perigo:hover {
+  background: var(--cor-erro, #c0392b);
+  color: #fff;
+}
+.forum-busca .input {
+  width: 100%;
+}
+/* O RECADO PRECISA DE AR ANTES DO BOTAO.
+ * Com `margin: 0` ele encostava em "Salvar a Conexao", e as duas coisas liam
+ * como uma so — o texto parecia rotulo do botao em vez de explicar o estado. */
+.perfil-recado {
+  font-size: 13px;
+  color: var(--cor-texto-fraco);
+  margin: 0 0 14px;
+}
+.cat-cabeca-topo .cat-acoes {
+  margin-left: auto;
+}
+
+/* ---- As ações: sempre presentes, discretas até serem procuradas ---- */
+/*
+ * A PRIMEIRA VERSÃO DESTA REGRA ERA `opacity: 0`, E ESTAVA ERRADA.
+ *
+ * O raciocínio era certo pela metade: trinta e dois botões com o mesmo peso do
+ * conteúdo é uma parede, e sumir com eles limpou a tela. Mas controle
+ * invisível é controle que ninguém descobre — quem nunca viu a seta não sabe
+ * que dá para reordenar, e passar o mouse por cima de tudo à procura de função
+ * escondida não é algo que alguém faça.
+ *
+ * O certo era baixar o VOLUME, não desligar o som. Meio tom de presença diz
+ * "existe algo aqui" sem competir com o nome do que está publicado; o hover e o
+ * foco trazem para a frente. Contenção é o acessório ficar quieto, não
+ * desaparecer.
+ */
+.cat-acoes {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  flex: none;
+}
+
+/* O "+ Módulo" e o "+ Aula" seguem a mesma ideia: contorno quieto em repouso,
+ * cor da marca quando a linha acorda. */
+.cat-acoes .btn--secundario {
+  color: var(--cor-acao-quieta);
+  border-color: var(--linha);
+  background: transparent;
+  transition:
+    color var(--t-micro),
+    border-color var(--t-micro),
+    background var(--t-micro);
+}
+.cat-linha:hover .cat-acoes .btn--secundario,
+.cat-cabeca:hover .cat-acoes .btn--secundario,
+.cat-linha:focus-within .cat-acoes .btn--secundario,
+.cat-cabeca:focus-within .cat-acoes .btn--secundario {
+  color: var(--cor-principal);
+  border-color: color-mix(in srgb, var(--cor-principal) 35%, transparent);
+  background: var(--cor-fundo);
+}
+
+/* `:user-invalid` só marca DEPOIS de a pessoa mexer no campo — formulário que
+ * nasce vermelho acusa antes de haver erro. */
+.cat-editor-corpo .input:user-invalid {
+  border-color: var(--cor-erro);
+  outline-color: var(--cor-erro);
+}
+
+/* ---- O campo de imagem, com acabamento ---- */
+/* `::file-selector-button` deixa o botão nativo do navegador com a cara da
+ * casa, SEM trocar o <input type=file> por um botão falso — o nativo já traz
+ * teclado, foco e o nome do arquivo escolhido, de graça e para sempre. */
+.campo-imagem input[type='file']::file-selector-button {
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-right: var(--s-3);
+  padding: 7px 14px;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio-xs);
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+  cursor: pointer;
+  transition:
+    background var(--t-micro),
+    border-color var(--t-micro);
+}
+.campo-imagem input[type='file']::file-selector-button:hover {
+  background: var(--cor-hover);
+  border-color: var(--cor-principal);
+}
+@keyframes cat-brilho {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* ---- A entrada em escada (FX 99) ---- */
+@keyframes cat-entrada {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---- Celular ---- */
+
+/* "Tirar imagem" é destrutivo em miniatura: mesmo tom quieto do "Remover". */
+.campo-imagem .btn--secundario {
+  background: var(--cor-fundo);
+}
+
+/* ===========================================================================
+ * SUPORTE
+ * ===========================================================================
+ *
+ * Quem chega aqui já está com problema: os botões primeiro, a explicação
+ * depois. As dúvidas ficam DOBRADAS — cinco respostas abertas viram uma parede
+ * de texto, e quem chegou com pressa não acha a dele no meio.
+ */
+.suporte-contatos {
+  margin-bottom: var(--s-6);
+}
+.suporte-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  margin-top: var(--s-4);
+}
+.suporte-botoes .btn {
+  flex: 1 1 220px;
+}
+
+.suporte-duvidas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+.suporte-duvidas .secao-titulo {
+  margin-bottom: var(--s-1);
+}
+
+.suporte-duvida {
+  padding: 0;
+  overflow: hidden;
+}
+.suporte-duvida summary {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  list-style: none;
+  transition:
+    background var(--t-micro),
+    color var(--t-micro);
+}
+/* O triângulo do navegador tem outro peso de traço que o nosso set de ícones —
+ * e a pergunta já começa com um ícone à esquerda. */
+.suporte-duvida summary::-webkit-details-marker {
+  display: none;
+}
+.suporte-duvida summary:hover {
+  background: var(--cor-hover);
+  color: var(--cor-principal);
+}
+.suporte-duvida summary svg {
+  flex: none;
+  color: var(--cor-acao-quieta);
+}
+.suporte-duvida[open] summary {
+  color: var(--cor-principal);
+}
+.suporte-duvida[open] summary svg {
+  color: var(--cor-principal);
+}
+
+.suporte-resposta {
+  margin: 0 var(--s-4);
+  padding-bottom: var(--s-3);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--cor-texto-fraco);
+  max-width: 65ch;
+}
+.suporte-duvida .btn {
+  margin: 0 var(--s-4) var(--s-4);
+}
+
+/* A prévia do link de WhatsApp na tela de Equipe: endereço longo que precisa
+ * caber sem empurrar a coluna. */
+.suporte-previa {
+  color: var(--cor-texto-fraco);
+  font-size: 0.78rem;
+  word-break: break-all;
+}
+
+/* ===========================================================================
+ * A ESCOLHA DE FONTE, COM AMOSTRA
+ * ===========================================================================
+ *
+ * NOME DE FONTE NÃO É AMOSTRA DE FONTE. A lista era um `<select>` com
+ * "Editorial (Playfair + Inter)" escrito na fonte do sistema — quem não é de
+ * design não faz ideia do que sai daquilo, e a única forma de descobrir era
+ * salvar, olhar o site e voltar.
+ */
+.fontes-grade {
+  display: grid;
+  gap: var(--s-3);
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+  margin-top: var(--s-2);
+}
+.fonte-cartao {
+  position: relative;
+  display: block;
+  cursor: pointer;
+  padding: var(--s-4);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio-sm);
+  background: var(--cor-fundo);
+  transition:
+    border-color var(--t-micro),
+    background var(--t-micro);
+}
+.fonte-cartao:hover {
+  border-color: color-mix(in srgb, var(--cor-principal) 45%, transparent);
+}
+/* O rádio de verdade fica atrás da amostra: o navegador entrega as setas do
+ * teclado e o "só um por vez", e o cartão inteiro vira a área de clique. */
+.fonte-cartao input {
+  position: absolute;
+  top: var(--s-3);
+  right: var(--s-3);
+  accent-color: var(--cor-principal);
+}
+.fonte-cartao:has(input:checked) {
+  border-color: var(--cor-principal);
+  background: var(--cor-hover);
+}
+.fonte-cartao:has(input:focus-visible) {
+  outline: 2px solid var(--cor-principal);
+  outline-offset: 2px;
+}
+
+.fonte-amostra {
+  display: block;
+  padding-right: var(--s-5);
+}
+.fonte-amostra strong {
+  display: block;
+  font-size: 1.1rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+.fonte-amostra span {
+  display: block;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--cor-texto-fraco);
+  margin-top: 2px;
+}
+.fonte-nome {
+  display: block;
+  margin-top: var(--s-3);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--cor-principal);
+}
+.fonte-porque {
+  display: block;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--cor-texto-fraco);
+  margin-top: 2px;
+}
+
+/* ---- Uma a uma ---- */
+.fontes-dupla {
+  display: grid;
+  gap: var(--s-3);
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  margin-top: var(--s-2);
+}
+.fonte-individual-rotulo {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--cor-texto-fraco);
+  margin-bottom: var(--s-1);
+}
+/* A amostra ao lado NÃO depende de o navegador desenhar a opção na própria
+ * fonte — alguns fazem, outros ignoram. Esta linha desenha sempre. */
+.fonte-amostra-linha {
+  margin-top: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border: 1px dashed var(--linha);
+  border-radius: var(--raio-xs);
+  font-size: 1rem;
+  color: var(--cor-texto);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- As duas partes do logo escrito ---- */
+.logo-partes {
+  display: grid;
+  gap: var(--s-4);
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+}
+.logo-parte {
+  padding: var(--s-4);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie);
+}
+.logo-parte-titulo {
+  display: block;
+  margin-bottom: var(--s-3);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--cor-texto-fraco);
+}
+.ofertas-preco-linha .input {
+  flex: 1;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+/* Campo desabilitado precisa PARECER desabilitado: sem isto, o preço de um
+ * plano desligado continua com cara de editável. */
+.ofertas-preco-linha .input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+/* A chave é longa e sem sentido: fonte de código deixa conferir caractere a
+ * caractere quando alguém precisa comparar com o que está no Asaas. */
+.pag-form-chave .input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}

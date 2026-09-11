@@ -1,0 +1,447 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function meuCadastro() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+    // ---- O PRAZO DO ACESSO: quem desativa quem venceu ----
+    //
+    // ⚠️ É ESTA FUNÇÃO QUE DESLIGA O ACESSO VENCIDO. Não é uma tarefa noturna,
+    // não é o painel do admin, não é o Asaas: é aqui, na hora em que a pessoa
+    // tenta ler qualquer coisa, comparando com o relógio do SERVIDOR.
+    //
+    // A alternativa comum é um robô diário que marca `ativo: false` em quem
+    // venceu. Ela tem uma falha silenciosa: no dia em que o robô não roda, todo
+    // mundo que venceu continua entrando, e nada avisa. Segurança que depende
+    // de uma tarefa ter rodado é esperança, não trava.
+    //
+    // TRÊS COISAS SIGNIFICAM "SEM PRAZO", e as três de propósito:
+    //
+    //   • ser admin              — senão o dono se tranca fora do próprio sistema
+    //   • o campo não existir    — é o caso de todo cadastro feito antes disto
+    //   • o campo ser null       — é como se apaga um prazo à mão
+    //
+    // A segunda é a que impede esta linha de expulsar a comunidade inteira no
+    // dia em que subir: ninguém tem `acessoAte` ainda, então para todos eles a
+    // resposta continua sendo "pode entrar". Quem passa a ter prazo é só quem
+    // entrar comprando daqui para a frente.
+    function acessoNoPrazo() {
+      return meuCadastro().papel == 'admin'
+        || !('acessoAte' in meuCadastro())
+        || meuCadastro().acessoAte == null
+        || meuCadastro().acessoAte > request.time;
+    }
+    function ehDaEquipe() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid))
+        && meuCadastro().ativo == true
+        && acessoNoPrazo();
+    }
+    function ehAdmin() {
+      return ehDaEquipe() && meuCadastro().papel == 'admin';
+    }
+
+    // ---- O GESTOR: quem cuida da área de membros sem tocar no dinheiro ----
+    //
+    // ⚠️ ESTA FUNÇÃO NÃO TRANCA NADA — ELA DESTRANCA.
+    //
+    // O padrão deste banco é NEGAR: qualquer papel que não seja exatamente
+    // `admin` já era recusado em tudo que é de administração. Criar um cadastro
+    // com `papel: 'gestor'` sem esta função não produziria alguém perigoso;
+    // produziria alguém inútil, que abre o painel e não consegue salvar nada.
+    //
+    // O que ela faz é ensinar UMA PALAVRA NOVA às coleções de CONTEÚDO — e a
+    // mais nenhuma. A lista do que continua exigindo `ehAdmin()` é a razão de
+    // este papel existir:
+    //
+    //   usuarios              quem promove alguém dá as chaves de tudo
+    //   publico/identidade    muda o produto inteiro, para todos, de uma vez
+    //   publico/suporte       os contatos que a tela de entrada mostra
+    //   config/*             domínios que podem cobrar
+    //   ofertas, cupons       preço e acesso grátis: é dinheiro
+    //   pedidos, eventos      a lista de clientes, com nome, e-mail e CPF
+    //   auditoria, segredos   a trilha e o cofre
+    //
+    // ⚠️ A LINHA GENÉRICA DE `/dados/app` É O PONTO MAIS DELICADO DESTA
+    // MUDANÇA. Ela passa a aceitar o gestor, então TODA coleção nova sem regra
+    // própria nasce gravável por ele. Isso é aceitável — coleção nova é
+    // conteúdo até prova em contrário — DESDE QUE as quatro coleções de
+    // dinheiro continuem em `temRegraPropria`. Há um teste que reprova se
+    // alguma delas sair de lá.
+    function ehGestor() {
+      return ehDaEquipe() && meuCadastro().papel in ['admin', 'gestor'];
+    }
+
+    // De quais PROJETOS esta pessoa cuida. Sem a lista (campo ausente ou null)
+    // ela alcança todos — é o caso do dono, e o de todo cadastro antigo, então
+    // ninguém perde acesso sozinho quando você começa a usar isto.
+    //
+    // "Projeto" é o que o seu produto quiser: um blog, uma clínica, uma obra,
+    // um radar. As regras não precisam saber — só que existe uma lista.
+    //
+    // O NOME DO CAMPO GRAVADO aparece uma vez só, aqui dentro. Ele nasceu no
+    // primeiro produto feito nesta Base e continua assim porque renomear campo
+    // gravado é migração de dados em produto que já está no ar. Os gêmeos deste
+    // trecho vivem em base/escopo.js e functions/_lib/escopo.js.
+    function alcanceDaPessoa() {
+      return meuCadastro().blogs;
+    }
+    function vejoTodosOsProjetos() {
+      return !('blogs' in meuCadastro()) || alcanceDaPessoa() == null;
+    }
+    function alcanca(projetoId) {
+      return vejoTodosOsProjetos() || alcanceDaPessoa().hasAny([projetoId]);
+    }
+
+    // Coleções em que cada registro pertence a um projeto. O montador escreve
+    // esta lista a partir do que cada módulo declara em modulo.json.
+    // NÃO edite à mão: quem manda é o manifesto do módulo.
+    function temDono(colecao) {
+      return colecao in [/* MODULOS:COLECOES */];
+    }
+
+    // Coleções que têm regra PRÓPRIA logo abaixo e por isso precisam ficar de
+    // fora da genérica.
+    //
+    // ⚠️ ISTO NÃO É ORGANIZAÇÃO, É A TRAVA. As regras do Firestore são OU: a
+    // linha genérica de /dados/app libera `write` para QUALQUER pessoa
+    // cadastrada — inclusive aluno comum. Enquanto o conteúdo não estava
+    // excluído dela, todo aluno podia reescrever o curso inteiro pelo console
+    // do navegador, e a regra estrita escrita depois não anulava nada.
+    //
+    // Esquecer de acrescentar aqui uma coleção nova NÃO quebra nada visível.
+    // Só deixa a coleção aberta.
+    function temRegraPropria(colecao) {
+      return colecao in ['estado', 'avisos', 'recados'];
+    }
+
+    match /usuarios/{id} {
+      // ⚠️ CADA PESSOA LÊ O PRÓPRIO CADASTRO, E MAIS NENHUM.
+      //
+      // Antes, qualquer membro ativo lia o cadastro de TODOS. Não pela tela —
+      // pelo console do navegador, em dois comandos. E o cadastro tem e-mail.
+      //
+      // Numa comunidade paga, isso é a lista de clientes exposta a qualquer um
+      // que entre, inclusive a um concorrente que pague uma mensalidade para
+      // levá-la embora. O vazamento não deixaria rastro nenhum: é uma leitura,
+      // não uma gravação, e leitura não aparece em lugar algum.
+      //
+      // NADA NA TELA DEPENDIA DISSO — conferido antes de fechar: a tela de
+      // Equipe pega a lista pelo SERVIDOR (`listarUsuarios`), que passa por
+      // cima das regras com a permissão do admin, e a sessão lê só o próprio
+      // documento. O nome que aparece no fórum vem gravado no próprio post.
+      //
+      // Quem quiser aparecer para os outros tem `/dados/app/perfis` — onde a
+      // pessoa escolhe o que mostrar, e e-mail não é um dos campos.
+      allow read:  if request.auth != null && (request.auth.uid == id || ehAdmin());
+      allow create, delete: if ehAdmin();
+
+      // A PESSOA MUDA O PRÓPRIO NOME, E MAIS NADA.
+      //
+      // O nome é o que vai aparecer no fórum e na Conexão. Deixá-la presa ao
+      // nome que veio do Google é começar a comunidade com gente que não se
+      // reconhece — e é chamado de suporte para o que ela resolve sozinha.
+      //
+      // A porta tem o tamanho exato: `hasOnly(['nome'])` recusa a gravação
+      // INTEIRA se vier qualquer outro campo junto. `papel` é permissão — quem
+      // se promove sozinho não tem permissão nenhuma. `ativo` é acesso, e
+      // `blogs` é escopo. Sem essa lista, "mudar o nome" e "virar admin" seriam
+      // a mesma gravação.
+      //
+      // O teto do nome está aqui e não só na tela: quem abre o console do
+      // navegador passa por cima da tela.
+      allow update: if ehAdmin() || (
+        ehDaEquipe()
+        && request.auth.uid == id
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nome'])
+        && request.resource.data.nome is string
+        && request.resource.data.nome.size() > 0
+        && request.resource.data.nome.size() <= 100
+      );
+    }
+    match /config/{id} {
+      allow read, write: if ehAdmin();
+    }
+
+    // ---- O ÚNICO documento deste banco que qualquer um lê ----
+    //
+    // Os contatos que a tela de entrada oferece a quem não consegue entrar: o
+    // SUPORTE (problema técnico) e o FINANCEIRO (licença vencida, quer pagar).
+    // Eles TÊM que ser lidos antes da autenticação: se exigissem sessão,
+    // apareceriam só para quem não precisa deles.
+    //
+    // O que fica exposto são números feitos para clientes ligarem — o propósito
+    // deles, não um segredo escapando. O que esta regra protege é o TAMANHO da
+    // porta, e é por isso que ela é tão fechada quanto parece aberta:
+    //
+    //   • UM documento, com id fixo. Qualquer outro `/publico/{outro}` cai no
+    //     padrão do Firestore, que é recusar — não existe regra para ele.
+    //   • QUATRO campos, e só. `hasOnly` recusa a gravação inteira se alguém
+    //     tentar acrescentar um quinto. Sem isso, o dia em que alguém guardasse
+    //     aqui "só mais um campinho" com dado de cliente, ele nasceria legível
+    //     pela internet inteira, em silêncio.
+    //   • Escrita só de administrador, e com tamanho conferido.
+    //
+    // ⚠️ ESTA LISTA É O GÊMEO DE `CONTATOS`, em `base/suporte.js`. É o único
+    // lugar do sistema que não consegue ler a lista de lá. Botão novo = entrada
+    // lá + duas linhas aqui; esquecer aqui faz o painel salvar e o banco
+    // recusar, com erro cru do Firestore na cara de quem preencheu.
+    //
+    // `textoAte` confere só quando o campo VEIO. O documento dos produtos que já
+    // estão no ar tem apenas `whatsapp`/`mensagem`, e um `merge` de dois campos
+    // não pode ser recusado por não trazer os do financeiro.
+    //
+    // A COLEÇÃO SE CHAMA `publico` de propósito. O nome é o aviso: quem for
+    // mexer aqui daqui a seis meses lê "publico" antes de escrever qualquer
+    // coisa. Guardar isto dentro de `/config` — que é de administrador — teria
+    // funcionado igual e escondido o risco atrás de um nome tranquilo.
+    function textoAte(campo, teto) {
+      return !(campo in request.resource.data)
+        || (request.resource.data[campo] is string
+            && request.resource.data[campo].size() <= teto);
+    }
+    match /publico/suporte {
+      allow read: if true;
+      allow write: if ehAdmin()
+        && request.resource.data.keys().hasOnly([
+             'whatsapp', 'mensagem', 'financeiroWhatsapp', 'financeiroMensagem'
+           ])
+        && textoAte('whatsapp', 20)
+        && textoAte('mensagem', 300)
+        && textoAte('financeiroWhatsapp', 20)
+        && textoAte('financeiroMensagem', 300);
+    }
+
+    // ---- A IDENTIDADE VISUAL: o segundo documento que qualquer um lê ----
+    //
+    // A tela de entrada mostra logo, cor e imagem de fundo ANTES de qualquer
+    // autenticação. Se a identidade exigisse sessão, ela só apareceria para
+    // quem já entrou — inútil.
+    //
+    // Mesma receita de `/publico/suporte`: UM documento, id fixo, LISTA BRANCA
+    // de campos. O que fica exposto é a aparência pública do site — é o
+    // propósito, não um vazamento.
+    //
+    // ⚠️ ESTA LISTA É O GÊMEO DE `CAMPOS`, em base/identidade.js. Campo novo
+    // exige as duas pontas: só lá, o banco recusa a gravação inteira com erro
+    // cru na cara de quem preencheu; só aqui, o painel nunca manda o campo.
+    //
+    // A lista branca protege o TAMANHO da porta. Sem ela, o dia em que alguém
+    // guardar aqui "só mais um campinho" com dado de membro, esse dado nasce
+    // legível pela internet inteira, em silêncio. `hasOnly` recusa a gravação
+    // inteira quando aparece um campo que não está na lista.
+    match /publico/identidade {
+      allow read: if true;
+      allow write: if ehAdmin()
+        && request.resource.data.keys().hasOnly([
+             // ⚠️ ESTA LISTA É GÊMEA DE `CAMPOS`, em `base/identidade.js`, e há
+             // um teste que reprova se as duas divergirem. Campo novo na tela
+             // entra nos DOIS lugares — aqui e lá — ou o banco recusa a
+             // gravação INTEIRA, com um erro de permissão que não diz qual
+             // campo causou.
+             'logoUrl', 'faviconUrl',
+             'loginImagemUrl', 'loginImagemMobileUrl',
+             'corDestaque', 'fonte', 'rodape',
+             'tema', 'corTopo', 'corConteudo', 'corRodape',
+             'logoTexto', 'logoCor', 'logoFonte',
+             'logoTexto2', 'logoCor2', 'logoFonte2',
+             'fonteTitulo', 'fonteTexto'
+           ]);
+
+    }
+
+    // Dados de todos os módulos ficam sob /dados/app/**. O nível fixo "app"
+    // garante caminho de 4 segmentos (documento válido no Firestore) e evita
+    // colisão com /usuarios e /config.
+    //
+    // ⚠️ AO ADICIONAR UM MÓDULO COM DONO: regras são OR. Esta linha genérica
+    // ANULA qualquer regra mais estrita que você escrever depois. Para uma
+    // coleção pertencer a um projeto, ela precisa ser EXCLUÍDA aqui:
+    //
+    //   function temDono(colecao) { return colecao in ['pedidos', 'clientes']; }
+    //   match /dados/app/{colecao}/{id} {
+    //     allow read, write: if ehDaEquipe() && !temDono(colecao);
+    //   }
+    //   match /dados/app/pedidos/{id} {
+    //     allow read:   if ehDaEquipe() && alcanca(resource.data.projetoId);
+    //     allow create: if ehDaEquipe() && alcanca(request.resource.data.projetoId);
+    //     allow update: if ehDaEquipe() && alcanca(resource.data.projetoId)
+    //                   && alcanca(request.resource.data.projetoId);
+    //     allow delete: if ehDaEquipe() && alcanca(resource.data.projetoId);
+    //   }
+    //
+    // E lembre: regra que olha CAMPO do documento faz o Firestore recusar a
+    // listagem inteira se a consulta não filtrar por esse campo. Use
+    // db.listarOnde(colecao, campo, valores) — já pronto em base/servicos.js.
+    // O PADRÃO É FECHADO PARA ESCRITA, e isso é uma inversão consciente.
+    //
+    // A carcaça nasceu para CRM, onde a equipe inteira cria registro o dia todo,
+    // e por isso a linha genérica liberava `write` para qualquer cadastrado.
+    // Numa comunidade, quem entra é ALUNO: ele navega e assiste, e escreve em
+    // exatamente dois lugares — no próprio progresso e, quando existir, no
+    // fórum. Os dois têm regra própria, logo abaixo.
+    //
+    // Com o padrão aberto, bastava alguém criar uma coleção nova e esquecer de
+    // trancá-la para que todo aluno pudesse escrever nela. Nada quebra, nada
+    // avisa. Com o padrão fechado, esquecer trava a função — e isso aparece na
+    // hora, que é o erro barato.
+    match /dados/app/{colecao}/{id} {
+      allow read:  if ehDaEquipe() && !temDono(colecao) && !temRegraPropria(colecao);
+      allow write: if ehGestor()   && !temDono(colecao) && !temRegraPropria(colecao);
+    }
+
+    // AVISOS: o que o sino mostra.
+    //
+    // São recados da EQUIPE para todo mundo — live de quinta, curso novo,
+    // manutenção. Não são "fulano respondeu você": aviso pessoal tem outro
+    // dono e outra régua, e misturar os dois faria a equipe ver a caixa de
+    // recado de cada membro.
+    match /dados/app/avisos/{id} {
+      allow read:  if ehDaEquipe();
+      allow write: if ehGestor();
+    }
+
+    // ---- O FÓRUM: o ÚNICO lugar onde o aluno ESCREVE ----
+    //
+    // Todo o resto do sistema é "membro lê, admin escreve". Aqui a porta abre —
+    // e abrir porta é onde se erra. Três coisas precisam valer ao mesmo tempo:
+    //
+    //   1. O membro escreve.
+    //   2. Ele só mexe NO QUE É DELE. Sem isso, um aluno reescreve o post de
+    //      outro, e a comunidade perde a única coisa que um fórum precisa ter:
+    //      saber quem disse o quê.
+    //   3. Ele não vira moderador pela porta dos fundos. `fixado`, `visivel` e
+    //      `respostaAceitaId` NÃO são campos que o autor mexe — se fossem,
+    //      qualquer um fixaria o próprio post no topo da comunidade.
+    //
+    // A ASSINATURA É CONFERIDA NA GRAVAÇÃO, e não confiada à tela: quem abre o
+    // console do navegador manda o `autorUid` que quiser.
+
+    // ⚠️ A DATA NÃO PODE SER DO FUTURO.
+    //
+    // A lista ordena pelo mais recente. Com a data livre, bastava gravar
+    // `emMs` do ano 3000 pelo console para o próprio texto ficar no topo da
+    // comunidade PARA SEMPRE — um "fixado" que a moderação não pediu e que
+    // nenhum botão desfaz, porque a tela não oferece editar data.
+    //
+    // A folga de uma hora existe para relógio de celular adiantado, que é
+    // comum. O passado fica livre: post com data velha afunda, e afundar não
+    // machuca ninguém.
+    function dataDeAgora(emMs) {
+      return emMs is number && emMs <= request.time.toMillis() + 3600000;
+    }
+
+    // ---- OS RECADOS PESSOAIS: o único lugar que NEM O ADMIN LÊ ----
+    //
+    // "Fulano respondeu sua pergunta". Não é aviso: aviso é da equipe para todo
+    // mundo, o admin escreve e todo membro lê. Recado é de UMA pessoa para
+    // OUTRA — e a régua tem que ser o contrário em cada ponto.
+    //
+    // A LEITURA É SÓ DO DESTINATÁRIO, e isso inclui o administrador. Ele não
+    // precisa: o que gerou o recado é uma resposta no fórum, que ele já lê e já
+    // modera. Deixar o admin ler a caixa de todo mundo seria pagar em
+    // privacidade por uma informação que ele já tem.
+    //
+    // ⚠️ A regra olha CAMPO do documento, então a consulta PRECISA filtrar por
+    // `paraUid` — use db.listarOnde('recados', 'paraUid', [uid]). Sem o filtro,
+    // o Firestore recusa a listagem inteira.
+    //
+    // O RECADO NÃO CARREGA TEXTO LIVRE (`tipo` diz qual frase a tela monta).
+    // Se ele carregasse, qualquer membro teria um megafone privado, sem
+    // moderação, direto no sino de qualquer outro.
+    //
+    // E ele TEM QUE ESTAR PENDURADO EM ALGO QUE EXISTE:
+    //   • "respondeu você" exige que o comentário seja MEU e que o post seja
+    //     DELA — os dois conferidos no banco, não na tela.
+    //   • "sua resposta resolveu" exige que o post seja MEU (só quem perguntou
+    //     marca) e que o destinatário seja o autor daquela resposta.
+    //
+    // Sem esse par de conferências, mandar recado seria um formulário livre:
+    // dava para encher o sino de qualquer pessoa apontando para qualquer post.
+    // Com ele, cada recado custa uma participação de verdade no fórum — que é
+    // pública, moderável e apagável.
+    function autorDoPost(postId) {
+      return get(/databases/$(database)/documents/dados/app/posts/$(postId)).data.autorUid;
+    }
+    function autorDoComentario(comentarioId) {
+      return get(/databases/$(database)/documents/dados/app/comentarios/$(comentarioId)).data.autorUid;
+    }
+    match /dados/app/recados/{id} {
+      allow read: if ehDaEquipe() && resource.data.paraUid == request.auth.uid;
+
+      allow create: if ehDaEquipe()
+        && request.resource.data.keys().hasOnly([
+             'tipo', 'paraUid', 'deUid', 'deNome', 'postId', 'postTitulo',
+             'comentarioId', 'emMs', 'criadoPor', 'criadoEm'
+           ])
+        && request.resource.data.deUid == request.auth.uid
+        // Recado para si mesmo é bolinha vermelha por causa da própria
+        // resposta — o jeito mais rápido de ensinar a ignorar o sino.
+        && request.resource.data.paraUid != request.auth.uid
+        && request.resource.data.postId is string
+        && request.resource.data.comentarioId is string
+        && request.resource.data.deNome is string
+        && request.resource.data.deNome.size() <= 100
+        && request.resource.data.postTitulo is string
+        && request.resource.data.postTitulo.size() <= 200
+        && dataDeAgora(request.resource.data.emMs)
+        && (
+             (request.resource.data.tipo == 'resposta'
+              && autorDoComentario(request.resource.data.comentarioId) == request.auth.uid
+              && autorDoPost(request.resource.data.postId) == request.resource.data.paraUid)
+             ||
+             (request.resource.data.tipo == 'aceita'
+              && autorDoPost(request.resource.data.postId) == request.auth.uid
+              && autorDoComentario(request.resource.data.comentarioId) == request.resource.data.paraUid)
+           );
+
+      // NÃO EXISTE `update`: recado não se edita. Ele é o registro de uma coisa
+      // que aconteceu — mudá-lo depois seria reescrever o passado no sino de
+      // outra pessoa.
+      allow delete: if ehDaEquipe() && resource.data.paraUid == request.auth.uid;
+    }
+
+    // ---- O PROGRESSO: o contrário. O dono escreve, e só o dono ----
+    //
+    // O id do documento é o uid da pessoa. Um documento por membro, e não um
+    // por aula assistida: "continuar de onde parou" é uma leitura só, em vez de
+    // uma consulta a cada abertura da tela.
+    //
+    // O admin LÊ, para conseguir responder "por que não aparece a próxima aula
+    // pra mim?". NÃO escreve: progresso que o suporte edita deixa de ser prova
+    // do que a pessoa fez.
+    //
+    // Ele lê por `ehAdmin()`, que não toca em `resource.data` — então a
+    // listagem para o suporte funciona. O membro não lista, e não deve mesmo.
+    match /dados/app/estado/{uid} {
+      allow read:  if ehDaEquipe() && (request.auth.uid == uid || ehAdmin());
+      allow write: if ehDaEquipe() && request.auth.uid == uid;
+    }
+
+    /* MODULOS:REGRAS */
+
+    // Trilha de auditoria: quem fez o quê, quando. Só o servidor escreve —
+    // `write: if false` vale inclusive para o admin. Trilha que o auditado pode
+    // editar não é trilha. E ninguém apaga: não existe função que remova
+    // registro. O admin LÊ, para poder responder "quem apagou isso?".
+    //
+    // Use functions/_lib/auditoria.js: em ação destrutiva, grave a trilha ANTES
+    // de destruir — se ela falhar, prefira a ação recusada à ação invisível.
+    match /auditoria/{id} {
+      allow read:  if ehAdmin();
+      allow write: if false;
+    }
+
+    // Cofre: credenciais de integração e estados temporários de autorização.
+    // NINGUÉM lê pelo navegador — nem admin. Só as Cloud Functions, que passam
+    // por cima das regras. Sem isto, qualquer membro leria o passe de uma
+    // integração e agiria por fora do sistema.
+    match /segredos/{id} {
+      allow read, write: if false;
+    }
+    match /oauth_estados/{id} {
+      allow read, write: if false;
+    }
+  }
+}

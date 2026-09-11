@@ -1,0 +1,10 @@
+# O projeto NÃO entra na imagem: ele entra por bind mount, em tempo de execução
+# (ver `.docker/compose.yml`). Assim o que você edita no editor é o que o
+# emulador serve, sem rebuild — e o contexto de build fica em poucos KB em vez
+# de arrastar `node_modules` inteiro para o daemon a cada `docker build`.
+#
+# A ÚNICA coisa que a imagem precisa em tempo de build é o `package.json`: é
+# dele que sai a versão do `firebase-tools` a instalar, para a imagem não
+# divergir da versão que o projeto declara.
+*
+!package.json

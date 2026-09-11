@@ -1,0 +1,587 @@
+/* ⚠️ `text-decoration: none` PORQUE MUITO BOTAO DESTE SISTEMA E UM `<a>`.
+ *
+ * Navegacao entre aulas, "Ver a pagina", "Entrar na comunidade", os contatos da
+ * tela de entrada: 24 lugares onde um link recebe `.btn`. Sem esta linha, todos
+ * eles nascem com o sublinhado padrao do navegador — que num retangulo colorido
+ * parece defeito, e nao link.
+ *
+ * O conserto e AQUI, e nao em cada caso: quem escreve o proximo botao-link nao
+ * tem como saber que precisa desligar o sublinhado a mao. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: var(--raio-sm);
+  background: var(--grad-principal);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--cor-principal) 25%, transparent);
+  transition:
+    transform 0.12s,
+    box-shadow 0.12s,
+    filter 0.12s;
+}
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--sombra-forte);
+  filter: brightness(1.05);
+}
+.btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+.btn--secundario {
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+  border: 1px solid var(--cor-borda);
+  box-shadow: none;
+}
+.btn--secundario:hover {
+  background: var(--cor-hover);
+  border-color: var(--cor-principal);
+  color: var(--cor-principal);
+  filter: none;
+}
+/* O botão de suporte da tela de login. Verde do token `--cor-ok`, e não um
+   verde inventado: é a mesma cor que o resto do sistema já usa para "deu
+   certo", e o suporte é a saída boa para quem travou.
+   `text-decoration: none` porque este é o único `.btn` que é um link <a> — sem
+   isso ele sai sublinhado, parecendo texto e não botão. */
+.btn--suporte {
+  background: var(--cor-ok);
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.25);
+  text-decoration: none;
+}
+/* O botão do financeiro, para quem está com a licença vencida e quer pagar.
+   Fica ao lado do verde do suporte, então NÃO é mais um botão colorido: três
+   cores fortes empilhadas viram barulho e escondem qual é a ação principal
+   (entrar). Contorno e fundo limpo — visível, e sem disputar com o login. */
+.btn--financeiro {
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+  border: 1px solid var(--cor-borda);
+  box-shadow: none;
+  text-decoration: none;
+}
+.btn--financeiro:hover {
+  background: var(--cor-hover);
+  border-color: var(--cor-principal);
+  color: var(--cor-principal);
+  filter: none;
+}
+/* A pilha da tela de entrada: um botão embaixo do outro, largura cheia. Some
+   inteira quando não há contato cadastrado — `:empty` evita a margem fantasma
+   de uma caixa vazia embaixo do botão do Google. */
+.pilha-contatos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+.pilha-contatos:empty {
+  display: none;
+}
+.pilha-contatos .btn {
+  width: 100%;
+}
+.card {
+  background: var(--cor-fundo);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  padding: 20px;
+  box-shadow: var(--sombra);
+}
+.input,
+.campo textarea,
+.campo select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  font: inherit;
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.input:focus,
+.campo textarea:focus,
+.campo select:focus {
+  outline: none;
+  border-color: var(--cor-principal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cor-principal) 22%, transparent);
+}
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: var(--espaco);
+}
+.campo label {
+  font-size: 13px;
+  color: var(--cor-texto-fraco);
+  font-weight: 500;
+}
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+}
+.tabela th {
+  text-align: left;
+  padding: 10px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--cor-texto-fraco);
+  border-bottom: 2px solid var(--cor-borda);
+}
+.tabela td {
+  text-align: left;
+  padding: 10px;
+  border-bottom: 1px solid var(--cor-borda);
+}
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--cor-superficie-2);
+  color: var(--cor-principal);
+  font-size: 12px;
+  font-weight: 600;
+}
+.modal-fundo {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 22, 40, 0.45);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+.modal {
+  background: var(--cor-fundo);
+  border-radius: var(--raio);
+  padding: 24px;
+  max-width: 640px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: var(--sombra-forte);
+}
+.aviso {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 14px 18px;
+  border-radius: var(--raio-sm);
+  color: #fff;
+  box-shadow: var(--sombra-forte);
+  font-weight: 500;
+  z-index: 60;
+}
+.aviso--ok {
+  background: var(--cor-ok);
+}
+.aviso--erro {
+  background: var(--cor-erro);
+}
+.aviso--info {
+  background: var(--cor-texto-fraco);
+}
+
+/* Botão com ícone: o desenho fica colado no texto, sem parecer enfeite solto */
+.btn--icone {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Editor do texto: parece o artigo, mas é editável */
+
+/* Estrela de favoritar: vazia por padrão, preenchida quando guardada */
+
+/* Ação que não dá pra desfazer — precisa parecer diferente antes do clique */
+.btn--perigo {
+  background: var(--cor-erro);
+  box-shadow: none;
+}
+.btn--perigo:hover {
+  background: #b91c1c;
+}
+
+/* Estado de conexão — bolinha em vez de emoji */
+.ponto {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--cor-texto-fraco);
+}
+.ponto::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cor-borda);
+  flex: none;
+}
+.ponto--ok {
+  color: var(--cor-ok);
+}
+.ponto--ok::before {
+  background: var(--cor-ok);
+}
+
+/* Faixa de aviso: a cor fica na borda esquerda, sem emoji no texto */
+.faixa {
+  border-left: 3px solid var(--cor-borda);
+  background: var(--cor-superficie);
+  padding: 11px 14px;
+  border-radius: 0 var(--raio-sm) var(--raio-sm) 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--cor-texto);
+}
+.faixa--ok {
+  border-left-color: var(--cor-ok);
+}
+.faixa--atencao {
+  border-left-color: #d97706;
+}
+
+/* Tela ainda não construída */
+.embreve {
+  text-align: center;
+  color: var(--cor-texto-fraco);
+  padding: 34px 20px;
+}
+.embreve .icone {
+  opacity: 0.45;
+  margin-bottom: 10px;
+}
+
+/* Colunas do Kanban */
+.vazio {
+  color: var(--cor-texto-fraco);
+  text-align: center;
+  padding: 40px;
+}
+/* Aviso de "carregando" entre telas. Discreto e sem animação chamativa: ele
+ * aparece só quando a espera passa de 180ms, e some assim que a tela desenha.
+ *
+ * Centralizado: encostado no canto de cima à esquerda ele quase se perdia na
+ * borda, e quem está esperando olha para o meio da tela, não para o canto. */
+/* Ocupa o espaço que tiver e centraliza dentro dele — sem número escolhido a
+ * dedo. Com `min-height: 45vh` a caixa tinha altura fixa e o texto ficava no
+ * meio DELA, ou seja, no terço de cima da página.
+ *
+ * `height: 100%` resolve dentro do conteúdo (que tem altura definida pela
+ * grade); `flex: 1` resolve na tela de início, antes de a grade existir. Em
+ * qualquer resolução, o centro é o centro. */
+.carregando-tela {
+  color: var(--cor-texto-fraco);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  min-height: 12rem;
+}
+.carregando-tela::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--cor-borda);
+  border-top-color: var(--cor-principal);
+  border-radius: 50%;
+  animation: girar 0.7s linear infinite;
+}
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---- Abas: a escolha de ferramenta DENTRO da tela ---- */
+/* Existe para a barra lateral não crescer quando quem entra é admin. A casca é
+ * a mesma para membro e para dono; o que muda é o conteúdo da direita. */
+.abas {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--cor-borda);
+  margin-bottom: 20px;
+}
+.aba {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 14px;
+  text-decoration: none;
+  color: var(--cor-texto-fraco);
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  border-radius: var(--raio-sm) var(--raio-sm) 0 0;
+  transition:
+    color 0.15s,
+    background 0.15s,
+    border-color 0.15s;
+}
+.aba:hover {
+  color: var(--cor-texto);
+  background: var(--cor-hover);
+}
+.aba--ativa {
+  color: var(--cor-principal);
+  border-bottom-color: var(--cor-principal);
+}
+
+/* ===========================================================================
+   A TELA DE ENTRADA: duas metades no desktop, uma no celular.
+   =========================================================================== */
+
+/* `dvh` e não `vh`: no celular a barra do navegador aparece e some, e `vh`
+ * ignora isso — a caixa de entrada ficava cortada embaixo. */
+.entrada {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 0;
+}
+
+/* Sem imagem configurada, fica o gradiente da marca. Nunca meia tela branca:
+ * uma cor de propósito é melhor que um vazio que parece defeito. */
+.entrada-imagem {
+  background: var(--grad-principal);
+  background-size: cover;
+  background-position: center;
+}
+
+.entrada-painel {
+  display: grid;
+  place-items: center;
+  padding: 32px 24px;
+  background: var(--cor-fundo);
+}
+.entrada-caixa {
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+}
+
+.entrada-logo {
+  max-width: 200px;
+  max-height: 72px;
+  margin: 0 auto 18px;
+  display: block;
+  object-fit: contain;
+}
+.entrada-marca {
+  justify-content: center;
+  display: flex;
+  margin: 0 0 6px;
+}
+/* O logo escrito na tela de entrada usa os mesmos tokens do resto: cor sólida
+ * quando o dono escolheu uma, gradiente da marca quando não. Sem esta regra, a
+ * primeira tela que alguém vê mostrava o nome em texto cru enquanto o sistema
+ * inteiro mostrava a marca. */
+.entrada-marca strong {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  font-family: var(--fonte-logo, var(--fonte-titulo, var(--fonte)));
+  background: var(--cor-logo, var(--grad-principal));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.entrada-marca[hidden] {
+  display: none;
+}
+.entrada-texto {
+  color: var(--cor-texto-fraco);
+  font-size: 13.5px;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+.entrada-botao {
+  width: 100%;
+}
+.entrada-erro {
+  color: var(--cor-erro);
+  margin-top: 12px;
+  font-size: 13.5px;
+}
+
+/* ---- Celular e tablet: a imagem vira FUNDO ----
+ *
+ * Meia tela de imagem num aparelho de 390px não sobra espaço para o resto.
+ * Ela sai da grade, vira pano de fundo fixo, e a caixa flutua por cima.
+ */
+@media (max-width: 900px) {
+  .entrada {
+    grid-template-columns: 1fr;
+  }
+
+  .entrada-imagem {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+  }
+
+  .entrada-painel {
+    position: relative;
+    z-index: 1;
+    background: transparent;
+    align-content: center;
+  }
+
+  /* A caixa ganha corpo só quando há foto atrás. Sem imagem, o fundo é o
+   * gradiente da marca e a caixa branca já se destaca sozinha — sombra e véu
+   * ali seriam enfeite sobre enfeite. */
+  .entrada--com-imagem .entrada-caixa {
+    background: var(--cor-fundo);
+    border-radius: var(--raio);
+    padding: 28px 22px;
+    box-shadow: 0 18px 50px rgba(15, 17, 34, 0.35);
+  }
+
+  /* O VÉU EXISTE PARA O TEXTO SER LEGÍVEL, e não para escurecer por estilo.
+   * A foto é escolhida pelo dono, e ninguém garante que ela seja escura o
+   * bastante atrás de uma caixa branca. */
+  .entrada--com-imagem .entrada-imagem::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 17, 34, 0.45);
+  }
+}
+
+/* ---- As duas portas da entrada ---- */
+.entrada-ou {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0 14px;
+  color: var(--cor-texto-fraco);
+  font-size: 12px;
+}
+.entrada-ou::before,
+.entrada-ou::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--cor-borda);
+}
+.entrada-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+}
+.entrada-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  color: var(--cor-texto-fraco);
+}
+/* Botão de texto, e não link: ele executa uma ação (mandar email), não navega.
+ * Link que não leva a lugar nenhum confunde quem usa leitor de tela. */
+.entrada-link {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  background: none;
+  border: 0;
+  padding: 6px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--cor-principal);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.entrada-erro--ok {
+  color: var(--cor-ok);
+}
+
+/* A FAIXA DE VENCIMENTO — no topo do miolo, acima de qualquer área.
+ *
+ * Ela ocupa a largura toda de propósito: um avisozinho no canto é o mesmo que
+ * não avisar. E é a única coisa deste sistema que tem direito a cor de alerta
+ * em área de conteúdo — justamente porque aparece raramente, nos sete dias
+ * finais e depois do vencimento. Alerta que aparece sempre vira paisagem. */
+.faixa-vencimento {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-3) var(--s-4);
+  font-size: 14px;
+  line-height: 1.45;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.faixa-vencimento--avisando {
+  background: var(--cor-superficie-2);
+  background: color-mix(in srgb, var(--cor-atencao) 14%, transparent);
+  color: var(--cor-atencao);
+}
+
+.faixa-vencimento--vencido {
+  background: var(--cor-superficie-2);
+  background: color-mix(in srgb, var(--cor-erro) 14%, transparent);
+  color: var(--cor-erro);
+}
+
+/* O BOTÃO DE RENOVAR VAI PARA A DIREITA e não encolhe.
+ *
+ * `margin-left: auto` o joga para o fim da faixa: o olho lê o aviso e encontra
+ * a saída no ponto onde a frase termina. `flex: none` impede que um texto
+ * longo — "Seu acesso vence em 7 dias" no celular — esmague o botão até ele
+ * virar duas letras. */
+.faixa-vencimento .btn {
+  margin-left: auto;
+  flex: none;
+  /* Sobre um fundo já tingido de alerta, o gradiente da marca briga. Branco
+   * sólido com a cor do aviso é o que se lê de longe. */
+  background: var(--cor-fundo);
+  background-image: none;
+  color: inherit;
+  border: 1px solid currentColor;
+  box-shadow: none;
+}
+.faixa-vencimento .btn:hover {
+  filter: none;
+  background: var(--cor-fundo);
+  opacity: 0.82;
+}
+
+@media (max-width: 560px) {
+  /* Na tela estreita a frase e o botão não cabem lado a lado sem um dos dois
+   * ficar ilegível. O botão desce e ocupa a linha inteira — que é o alvo de
+   * toque certo para a única ação da faixa. */
+  .faixa-vencimento {
+    flex-wrap: wrap;
+  }
+  .faixa-vencimento .btn {
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
+  }
+}
